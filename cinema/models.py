@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 # 1. ManyToManyField (Nhiều - Nhiều)
 # Một bộ phim có nhiều thể loại, một thể loại có nhiều bộ phim.
 # ==========================================
-class Gener(models.Model):
+class Genre(models.Model):
     name = models.CharField(max_length=50, unique=True)
 
     def __str__(self):
@@ -17,7 +17,11 @@ class Movie(models.Model):
     title = models.CharField(max_length=255)
     duration = models.IntegerField(help_text="Movie Duration")
     # Django sẽ tự động tạo một bảng trung gian (movie_genres) ở dưới Database
-    geners = models.ManyToManyField(Gener, related_name="movies")
+    genres = models.ManyToManyField(Genre, related_name="movies")
+
+    # upload_to='movies/posters/' sẽ tự động tạo thư mục này và lưu ảnh vào đó
+    poster_url = models.ImageField(upload_to='movies/posters/', blank=True, null=True, help_text="Ảnh dọc cho phim")
+    banner_url = models.ImageField(upload_to='movies/banners/', blank=True, null=True, help_text="Ảnh ngang làm background")
 
     def __str__(self):
         return self.title
@@ -30,6 +34,7 @@ class Movie(models.Model):
 class Cinema(models.Model):
     name = models.CharField(max_length=100)
     location = models.CharField(max_length=255)
+    image = models.ImageField(upload_to='cinemas/', blank=True, null=True, help_text="Ảnh mặt tiền rạp")
 
     def __str__(self):
         return self.name
@@ -76,7 +81,7 @@ class Booking(models.Model):
 
 
 class Ticket(models.Model):
-    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="bookings")
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="tickets")
     seat = models.ForeignKey(Seat, on_delete=models.PROTECT)
 
     class Meta:
