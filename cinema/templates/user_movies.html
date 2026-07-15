@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}Phim Đang Chiếu | VIP Cinema{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="mb-8">
+        <h2 class="text-sm font-bold text-gold-500 tracking-widest uppercase mb-1">Cập nhật hôm nay</h2>
+        <h1 class="text-4xl font-extrabold text-white">Phim Đang Chiếu</h1>
+    </div>
+
+    <!-- Movie Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+        
+        <!-- Vòng lặp lấy dữ liệu từ Database -->
+        {% for movie in movies %}
+        <div class="group relative rounded-xl overflow-hidden cursor-pointer bg-dark-900 border border-gray-800 hover:border-gold-500/50 transition-all shadow-xl">
+            <!-- Poster -->
+            <div class="aspect-[2/3] overflow-hidden relative">
+                <!-- Hiển thị URL ảnh từ Database -->
+                <img src="{{ movie.poster_url }}" alt="{{ movie.title }}" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700">
+                <div class="absolute inset-0 bg-gradient-to-t from-dark-950 via-dark-950/40 to-transparent opacity-80"></div>
+                
+                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <button class="bg-gold-500 text-dark-950 font-bold py-3 px-6 rounded-full">MUA VÉ</button>
+                </div>
+            </div>
+
+            <!-- Info -->
+            <div class="p-4 absolute bottom-0 w-full">
+                <h3 class="text-lg font-bold text-white truncate">{{ movie.title }}</h3>
+                <p class="text-sm text-gray-400 mt-1">{{ movie.duration }} Phút</p>
+            </div>
+        </div>
+        {% endfor %}
+
+    </div>
+</div>
+{% endblock %}
