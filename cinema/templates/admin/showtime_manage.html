@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Quản Lý Phim | LuxeCinema{% endblock %}
+{% block title %}Quản Lý Lịch Chiếu | LuxeCinema{% endblock %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col lg:flex-row gap-8">
@@ -41,11 +41,11 @@
         <!-- Header -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-                <h1 class="text-3xl font-heading font-black text-white">Quản Lý Phim</h1>
-                <p class="text-sm text-subtext mt-1">Quản lý danh sách các phim trình chiếu trên hệ thống</p>
+                <h1 class="text-3xl font-heading font-black text-white">Quản Lý Lịch Chiếu</h1>
+                <p class="text-sm text-subtext mt-1">Lập lịch trình phát sóng các suất phim tại phòng chiếu</p>
             </div>
-            <a href="{% url 'admin-movie-create' %}" class="px-5 py-3 bg-primary text-background font-bold text-sm rounded-xl hover:bg-primaryHover transition-all flex items-center gap-2 shadow-glow">
-                <i class="fa-solid fa-plus"></i> Thêm Phim Mới
+            <a href="{% url 'admin-showtime-create' %}" class="px-5 py-3 bg-primary text-background font-bold text-sm rounded-xl hover:bg-primaryHover transition-all flex items-center gap-2 shadow-glow">
+                <i class="fa-solid fa-plus"></i> Thêm Suất Chiếu
             </a>
         </div>
 
@@ -57,35 +57,36 @@
             {% endfor %}
         {% endif %}
 
-        <!-- Filter Controls -->
+        <!-- Filter controls -->
         <div class="bg-card border border-border rounded-3xl p-6 shadow-glass">
             <form method="GET" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <!-- Search Query -->
-                <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-subtext">
-                        <i class="fa-solid fa-magnifying-glass text-xs"></i>
-                    </div>
-                    <input type="text" name="q" placeholder="Tìm tên phim..." value="{{ search_query }}"
-                           class="w-full bg-background border border-border rounded-xl py-2.5 pl-9 pr-4 text-xs text-white placeholder-subtext focus:ring-1 focus:ring-primary focus:border-transparent transition-all">
-                </div>
-
-                <!-- Genre Filter -->
+                <!-- Movie Select Filter -->
                 <div>
-                    <select name="genre" class="w-full bg-background border border-border rounded-xl py-2.5 px-4 text-xs text-white focus:ring-1 focus:ring-primary focus:border-transparent transition-all cursor-pointer">
-                        <option value="">Tất cả thể loại</option>
-                        {% for genre in genres %}
-                            <option value="{{ genre.id }}" {% if selected_genre == genre.id|stringformat:"s" %}selected{% endif %}>{{ genre.name }}</option>
+                    <select name="movie" class="w-full bg-background border border-border rounded-xl py-2.5 px-4 text-xs text-white focus:ring-1 focus:ring-primary focus:border-transparent transition-all cursor-pointer">
+                        <option value="">Tất cả phim</option>
+                        {% for movie in movies %}
+                            <option value="{{ movie.id }}" {% if selected_movie == movie.id|stringformat:"s" %}selected{% endif %}>{{ movie.title }}</option>
                         {% endfor %}
                     </select>
                 </div>
 
-                <!-- Submit buttons -->
+                <!-- Cinema Select Filter -->
+                <div>
+                    <select name="cinema" class="w-full bg-background border border-border rounded-xl py-2.5 px-4 text-xs text-white focus:ring-1 focus:ring-primary focus:border-transparent transition-all cursor-pointer">
+                        <option value="">Tất cả rạp chiếu</option>
+                        {% for cinema in cinemas %}
+                            <option value="{{ cinema.id }}" {% if selected_cinema == cinema.id|stringformat:"s" %}selected{% endif %}>{{ cinema.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Action Button -->
                 <div class="flex gap-2">
-                    <button type="submit" class="flex-1 bg-secondary text-white font-bold text-xs py-2.5 rounded-xl hover:bg-border transition-all">
-                        Lọc Dữ Liệu
+                    <button type="submit" class="flex-grow bg-secondary text-white font-bold text-xs py-2.5 rounded-xl hover:bg-border transition-all">
+                        Lọc Suất Chiếu
                     </button>
-                    {% if search_query or selected_genre %}
-                        <a href="{% url 'admin-movies' %}" class="px-4 py-2.5 border border-border rounded-xl text-xs font-bold text-white hover:bg-secondary/40 transition-all flex items-center justify-center">
+                    {% if selected_movie or selected_cinema %}
+                        <a href="{% url 'admin-showtimes' %}" class="px-4 py-2.5 border border-border rounded-xl text-xs font-bold text-white hover:bg-secondary/40 transition-all flex items-center justify-center">
                             Reset
                         </a>
                     {% endif %}
@@ -93,43 +94,41 @@
             </form>
         </div>
 
-        <!-- Movie List Table -->
+        <!-- Showtime List Table -->
         <div class="bg-card border border-border rounded-3xl p-6 shadow-glass overflow-hidden">
             <div class="overflow-x-auto -mx-6 px-6">
                 <table class="min-w-full divide-y divide-border/40 text-sm">
                     <thead>
                         <tr class="text-left text-xs font-bold text-subtext uppercase tracking-wider">
-                            <th class="pb-3 pr-4">Poster</th>
-                            <th class="pb-3 px-4">Tên Phim</th>
-                            <th class="pb-3 px-4">Thời Lượng</th>
-                            <th class="pb-3 px-4">Điểm Số</th>
+                            <th class="pb-3 pr-4">Phim</th>
+                            <th class="pb-3 px-4">Rạp & Phòng</th>
+                            <th class="pb-3 px-4">Thời Gian</th>
+                            <th class="pb-3 px-4">Giá Vé Gốc</th>
                             <th class="pb-3 pl-4 text-right">Thao Tác</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-border/30 text-white font-medium">
                         {% if page_obj %}
-                            {% for movie in page_obj %}
+                            {% for showtime in page_obj %}
                             <tr class="hover:bg-secondary/10 transition-colors">
                                 <td class="py-3 pr-4">
-                                    <div class="w-10 h-14 rounded-lg overflow-hidden border border-border shrink-0">
-                                        {% if movie.poster_url %}
-                                            <img src="{% if 'http' in movie.poster_url.name %}{{ movie.poster_url.name }}{% else %}{{ movie.poster_url.url }}{% endif %}" alt="" class="w-full h-full object-cover">
-                                        {% else %}
-                                            <div class="w-full h-full bg-secondary flex items-center justify-center text-xs text-subtext">No Image</div>
-                                        {% endif %}
-                                    </div>
+                                    <div class="font-bold text-white">{{ showtime.movie.title }}</div>
+                                    <div class="text-xs text-subtext mt-0.5">{{ showtime.movie.duration }} phút</div>
                                 </td>
                                 <td class="py-3 px-4">
-                                    <div class="font-bold text-white">{{ movie.title }}</div>
-                                    <div class="text-xs text-subtext truncate max-w-xs mt-0.5">{{ movie.genres.all|join:", "|default:"--" }}</div>
+                                    <div>{{ showtime.room.cinema.name }}</div>
+                                    <div class="text-xs text-subtext mt-0.5">{{ showtime.room.name }}</div>
                                 </td>
-                                <td class="py-3 px-4">{{ movie.duration }} phút</td>
-                                <td class="py-3 px-4 text-primary font-bold"><i class="fa-solid fa-star text-xs mr-1"></i>{{ movie.rating|default:"0.0" }}</td>
+                                <td class="py-3 px-4">
+                                    <div>{{ showtime.start_time|date:"H:i" }} - {{ showtime.end_time|date:"H:i" }}</div>
+                                    <div class="text-xs text-subtext mt-0.5">{{ showtime.start_time|date:"d/m/Y" }}</div>
+                                </td>
+                                <td class="py-3 px-4 font-bold text-primary">{{ showtime.base_price|floatformat:0 }} đ</td>
                                 <td class="py-3 pl-4 text-right space-x-2">
-                                    <a href="{% url 'admin-movie-edit' movie.id %}" class="text-primary hover:text-primaryHover text-xs font-bold">
+                                    <a href="{% url 'admin-showtime-edit' showtime.id %}" class="text-primary hover:text-primaryHover text-xs font-bold">
                                         <i class="fa-solid fa-pen-to-square mr-1"></i> Sửa
                                     </a>
-                                    <a href="{% url 'admin-movie-delete' movie.id %}" onclick="return confirm('Bạn chắc chắn muốn xóa phim này chứ?')" class="text-danger hover:text-red-400 text-xs font-bold">
+                                    <a href="{% url 'admin-showtime-delete' showtime.id %}" onclick="return confirm('Bạn chắc chắn muốn xóa suất chiếu này?')" class="text-danger hover:text-red-400 text-xs font-bold">
                                         <i class="fa-solid fa-trash mr-1"></i> Xóa
                                     </a>
                                 </td>
@@ -137,13 +136,13 @@
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="5" class="py-12 text-center text-subtext">Chưa có dữ liệu phim nào khớp với điều kiện lọc.</td>
+                                <td colspan="5" class="py-12 text-center text-subtext">Không tìm thấy suất chiếu nào khớp điều kiện lọc.</td>
                             </tr>
                         {% endif %}
                     </tbody>
                 </table>
             </div>
-            
+
             <!-- Pagination UI -->
             {% if page_obj.has_other_pages %}
             <div class="pt-6 border-t border-border/40 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-subtext">
@@ -152,7 +151,7 @@
                 </div>
                 <div class="flex gap-1.5 flex-wrap">
                     {% if page_obj.has_previous %}
-                        <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}" class="px-3 py-1.5 border border-border rounded-lg hover:bg-secondary/40 hover:text-white transition-all">Trước</a>
+                        <a href="?page={{ page_obj.previous_page_number }}{% if selected_movie %}&movie={{ selected_movie }}{% endif %}{% if selected_cinema %}&cinema={{ selected_cinema }}{% endif %}" class="px-3 py-1.5 border border-border rounded-lg hover:bg-secondary/40 hover:text-white transition-all">Trước</a>
                     {% else %}
                         <button class="px-3 py-1.5 border border-border/40 rounded-lg text-subtext/40 cursor-not-allowed" disabled>Trước</button>
                     {% endif %}
@@ -161,12 +160,12 @@
                         {% if page_obj.number == num %}
                             <span class="px-3 py-1.5 bg-primary text-background font-bold rounded-lg">{{ num }}</span>
                         {% else %}
-                            <a href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}" class="px-3 py-1.5 border border-border rounded-lg hover:bg-secondary/40 hover:text-white transition-all">{{ num }}</a>
+                            <a href="?page={{ num }}{% if selected_movie %}&movie={{ selected_movie }}{% endif %}{% if selected_cinema %}&cinema={{ selected_cinema }}{% endif %}" class="px-3 py-1.5 border border-border rounded-lg hover:bg-secondary/40 hover:text-white transition-all">{{ num }}</a>
                         {% endif %}
                     {% endfor %}
 
                     {% if page_obj.has_next %}
-                        <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}" class="px-3 py-1.5 border border-border rounded-lg hover:bg-secondary/40 hover:text-white transition-all">Sau</a>
+                        <a href="?page={{ page_obj.next_page_number }}{% if selected_movie %}&movie={{ selected_movie }}{% endif %}{% if selected_cinema %}&cinema={{ selected_cinema }}{% endif %}" class="px-3 py-1.5 border border-border rounded-lg hover:bg-secondary/40 hover:text-white transition-all">Sau</a>
                     {% else %}
                         <button class="px-3 py-1.5 border border-border/40 rounded-lg text-subtext/40 cursor-not-allowed" disabled>Sau</button>
                     {% endif %}

@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
+from .models import Movie, Cinema, Showtime
 
 class RegisterForm(forms.Form):
     full_name = forms.CharField(label='full name', max_length=100)
@@ -30,3 +31,32 @@ class RegisterForm(forms.Form):
 class LoginForm(forms.Form):
     email = forms.CharField(label='email', max_length=100)
     password = forms.CharField(label='password', max_length=50)
+
+
+class MovieForm(forms.ModelForm):
+    class Meta:
+        model = Movie
+        fields = ['title', 'duration', 'genres', 'description', 'rating', 'actors', 'poster_url', 'banner_url']
+        widgets = {
+            'genres': forms.CheckboxSelectMultiple(),
+        }
+
+class CinemaForm(forms.ModelForm):
+    class Meta:
+        model = Cinema
+        fields = ['name', 'location', 'image']
+
+class ShowtimeForm(forms.ModelForm):
+    class Meta:
+        model = Showtime
+        fields = ['movie', 'room', 'start_time', 'end_time', 'base_price']
+        widgets = {
+            'start_time': forms.DateTimeInput(attrs={
+                'type': 'datetime-local',
+                'class': 'block w-full px-4 py-3 bg-background border border-border rounded-xl text-white placeholder-subtext/50 text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all'
+            }),
+            'end_time': forms.DateTimeInput(attrs={
+                'type': 'datetime-local',
+                'class': 'block w-full px-4 py-3 bg-background border border-border rounded-xl text-white placeholder-subtext/50 text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all'
+            }),
+        }

@@ -11,17 +11,25 @@
         <div class="bg-card border border-border rounded-3xl p-6 space-y-6 shadow-glass">
             <div class="text-xs font-bold uppercase tracking-wider text-subtext pb-2 border-b border-border/40">Bảng Quản Trị</div>
             <nav class="flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-visible">
-                <a href="{% url 'dashboard' %}" class="bg-primary/10 border border-primary/20 text-primary px-4 py-3 rounded-xl flex items-center gap-3 font-semibold text-sm shrink-0 w-auto lg:w-full">
+                <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}bg-primary/10 border border-primary/20 text-primary{% else %}hover:bg-secondary/40 text-subtext hover:text-white{% endif %} px-4 py-3 rounded-xl flex items-center gap-3 font-semibold text-sm shrink-0 w-auto lg:w-full transition-all border border-transparent">
                     <i class="fa-solid fa-chart-line w-4 text-center"></i>
                     Tổng Quan
                 </a>
-                <a href="{% url 'admin-bookings' %}" class="hover:bg-secondary/40 text-subtext hover:text-white px-4 py-3 rounded-xl flex items-center gap-3 font-semibold text-sm shrink-0 w-auto lg:w-full transition-all">
+                <a href="{% url 'admin-bookings' %}" class="{% if request.resolver_match.url_name == 'admin-bookings' %}bg-primary/10 border border-primary/20 text-primary{% else %}hover:bg-secondary/40 text-subtext hover:text-white{% endif %} px-4 py-3 rounded-xl flex items-center gap-3 font-semibold text-sm shrink-0 w-auto lg:w-full transition-all border border-transparent">
                     <i class="fa-solid fa-ticket w-4 text-center"></i>
                     Quản Lý Đặt Vé
                 </a>
-                <a href="{% url 'movie-list' %}" class="hover:bg-secondary/40 text-subtext hover:text-white px-4 py-3 rounded-xl flex items-center gap-3 font-semibold text-sm shrink-0 w-auto lg:w-full transition-all">
+                <a href="{% url 'admin-movies' %}" class="{% if request.resolver_match.url_name == 'admin-movies' or 'movie-edit' in request.resolver_match.url_name %}bg-primary/10 border border-primary/20 text-primary{% else %}hover:bg-secondary/40 text-subtext hover:text-white{% endif %} px-4 py-3 rounded-xl flex items-center gap-3 font-semibold text-sm shrink-0 w-auto lg:w-full transition-all border border-transparent">
                     <i class="fa-solid fa-film w-4 text-center"></i>
-                    Website Phim
+                    Quản Lý Phim
+                </a>
+                <a href="{% url 'admin-cinemas' %}" class="{% if request.resolver_match.url_name == 'admin-cinemas' or 'cinema-edit' in request.resolver_match.url_name %}bg-primary/10 border border-primary/20 text-primary{% else %}hover:bg-secondary/40 text-subtext hover:text-white{% endif %} px-4 py-3 rounded-xl flex items-center gap-3 font-semibold text-sm shrink-0 w-auto lg:w-full transition-all border border-transparent">
+                    <i class="fa-solid fa-building w-4 text-center"></i>
+                    Quản Lý Rạp
+                </a>
+                <a href="{% url 'admin-showtimes' %}" class="{% if request.resolver_match.url_name == 'admin-showtimes' or 'showtime-edit' in request.resolver_match.url_name %}bg-primary/10 border border-primary/20 text-primary{% else %}hover:bg-secondary/40 text-subtext hover:text-white{% endif %} px-4 py-3 rounded-xl flex items-center gap-3 font-semibold text-sm shrink-0 w-auto lg:w-full transition-all border border-transparent">
+                    <i class="fa-solid fa-clock w-4 text-center"></i>
+                    Quản Lý Lịch Chiếu
                 </a>
             </nav>
         </div>

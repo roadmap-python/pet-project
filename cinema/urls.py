@@ -23,6 +23,24 @@ urlpatterns = [
     path('my-bookings/', views.my_bookings, name='my-bookings'),
 
     # Admin page
-    path('dashboard/', views.admin_dashboard_ui, name='dashboard'),
-    path('admin-bookings/', views.admin_bookings, name='admin-bookings'),
+    path('manage/dashboard/', views.admin_dashboard_ui, name='dashboard'),
+    path('manage/bookings/', views.admin_bookings, name='admin-bookings'),
+    
+    # Movie CRUD
+    path('manage/movies/', views.admin_movies, name='admin-movies'),
+    path('manage/movies/create/', views.admin_movie_create, name='admin-movie-create'),
+    path('manage/movies/edit/<int:movie_id>/', views.admin_movie_edit, name='admin-movie-edit'),
+    path('manage/movies/delete/<int:movie_id>/', views.admin_movie_delete, name='admin-movie-delete'),
+    
+    # Cinema CRUD
+    path('manage/cinemas/', views.admin_cinemas, name='admin-cinemas'),
+    path('manage/cinemas/create/', views.admin_cinema_create, name='admin-cinema-create'),
+    path('manage/cinemas/edit/<int:cinema_id>/', views.admin_cinema_edit, name='admin-cinema-edit'),
+    path('manage/cinemas/delete/<int:cinema_id>/', views.admin_cinema_delete, name='admin-cinema-delete'),
+    
+    # Showtime CRUD
+    path('manage/showtimes/', views.admin_showtimes, name='admin-showtimes'),
+    path('manage/showtimes/create/', views.admin_showtime_create, name='admin-showtime-create'),
+    path('manage/showtimes/edit/<int:showtime_id>/', views.admin_showtime_edit, name='admin-showtime-edit'),
+    path('manage/showtimes/delete/<int:showtime_id>/', views.admin_showtime_delete, name='admin-showtime-delete'),
 ]

@@ -5,12 +5,16 @@ from django.utils import timezone
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.models import Count
 
+from django.db import models
 from .models import Genre, Movie, Cinema, Room, Seat, Showtime, Booking, Ticket, Payment
-from .forms import RegisterForm, LoginForm
+from .forms import RegisterForm, LoginForm, MovieForm, CinemaForm, ShowtimeForm
+from decimal import Decimal
+from django.core.paginator import Paginator
 
 # Create your views here.
 def health(request):
@@ -146,7 +150,7 @@ def select_showtime(request, movie_id, cinema_id):
         start_time__gt=timezone.now()
     ).order_by('start_time')
     
-    # Gom nhóm showtimes theo ngày chiếu để giao diện hiển thị đẹp
+    # Gom nhóm showtimes theo ngày chiếu
     # Để đơn giản và nhanh chóng, ta có thể phân loại theo Date
     showtimes_by_date = {}
     for showtime in showtimes:
@@ -159,7 +163,7 @@ def select_showtime(request, movie_id, cinema_id):
     sorted_dates = sorted(showtimes_by_date.keys())
     showtime_dates = []
     for date_str in sorted_dates:
-        # Convert date_str to datetime object to display nicely in template
+        # Convert date_str to datetime object to display
         dt = timezone.datetime.strptime(date_str, '%Y-%m-%d')
         showtime_dates.append({
             'date_str': date_str,
@@ -247,7 +251,7 @@ def select_seats(request, showtime_id):
                     seat = Seat.objects.get(id=seat_id)
                     price = showtime.base_price
                     if seat.row in ['E', 'F', 'G']:
-                        price = price * timezone.decimal.Decimal('1.20')
+                        price = price * Decimal('1.20')
                     total_amount += price
                 
                 # Tạo Payment bản nháp
@@ -314,6 +318,7 @@ def payment(request, booking_id):
         'seats_str': seats_str,
     })
 
+
 # Bước 5: Báo đặt vé thành công (Yêu cầu Đăng nhập)
 @login_required(login_url='login')
 def booking_success(request, booking_id):
@@ -329,7 +334,7 @@ def booking_success(request, booking_id):
         'payment': payment_obj,
     })
 
-# Trang danh sách vé của tôi (Yêu cầu Đăng nhập)
+# Trang danh sách vé của tôi
 @login_required(login_url='login')
 def my_bookings(request):
     bookings = Booking.objects.filter(user=request.user).order_by('-created_at')
@@ -337,6 +342,7 @@ def my_bookings(request):
         'bookings': bookings
     })
 
+@staff_member_required(login_url='login')
 def admin_dashboard_ui(request):
     from django.db.models import Sum
     # Statistics
@@ -360,6 +366,238 @@ def admin_dashboard_ui(request):
     }
     return render(request, 'admin/dashboard.html', context)
 
+
+@staff_member_required(login_url='login')
 def admin_bookings(request):
-    bookings = Booking.objects.all().order_by('-created_at')
-    return render(request, 'admin/booking_manage.html', {'bookings': bookings})
+    bookings_list = Booking.objects.all().order_by('-created_at')
+    
+    # Advanced Filtering
+    q = request.GET.get('q', '').strip()
+    if q:
+        bookings_list = bookings_list.filter(
+            models.Q(id__icontains=q) | 
+            models.Q(user__username__icontains=q) | 
+            models.Q(user__email__icontains=q)
+        )
+        
+    status = request.GET.get('status', '').strip()
+    if status:
+        bookings_list = bookings_list.filter(status=status)
+        
+    paginator = Paginator(bookings_list, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'admin/booking_manage.html', {
+        'page_obj': page_obj,
+        'status_filter': status,
+        'search_query': q
+    })
+
+# ==========================================
+# QUẢN LÝ PHIM (MOVIE CRUD)
+# ==========================================
+@staff_member_required(login_url='login')
+def admin_movies(request):
+    movies_list = Movie.objects.all().order_by('-id')
+    
+    # Advanced Filtering
+    q = request.GET.get('q', '').strip()
+    if q:
+        movies_list = movies_list.filter(title__icontains=q)
+        
+    genre_id = request.GET.get('genre', '').strip()
+    if genre_id:
+        movies_list = movies_list.filter(genres__id=genre_id)
+        
+    paginator = Paginator(movies_list, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    genres = Genre.objects.all()
+    
+    return render(request, 'admin/movie_manage.html', {
+        'page_obj': page_obj,
+        'genres': genres,
+        'selected_genre': genre_id,
+        'search_query': q
+    })
+
+@staff_member_required(login_url='login')
+def admin_movie_create(request):
+    form = MovieForm()
+    if request.method == 'POST':
+        form = MovieForm(request.POST, request.FILES)
+        if form.is_valid():
+            movie = form.save()
+            messages.success(request, f"Thêm phim '{movie.title}' thành công!")
+            return redirect('admin-movies')
+            
+    return render(request, 'admin/movie_form.html', {
+        'form': form,
+        'edit_mode': False
+    })
+
+@staff_member_required(login_url='login')
+def admin_movie_edit(request, movie_id):
+    movie = get_object_or_404(Movie, id=movie_id)
+    if request.method == 'POST':
+        form = MovieForm(request.POST, request.FILES, instance=movie)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Cập nhật phim '{movie.title}' thành công!")
+            return redirect('admin-movies')
+    else:
+        form = MovieForm(instance=movie)
+        
+    return render(request, 'admin/movie_form.html', {
+        'form': form,
+        'movie': movie,
+        'edit_mode': True
+    })
+
+@staff_member_required(login_url='login')
+def admin_movie_delete(request, movie_id):
+    movie = get_object_or_404(Movie, id=movie_id)
+    title = movie.title
+    movie.delete()
+    messages.success(request, f"Đã xóa phim '{title}' thành công!")
+    return redirect('admin-movies')
+
+
+# ==========================================
+# QUẢN LÝ RẠP CHIẾU (CINEMA CRUD)
+# ==========================================
+@staff_member_required(login_url='login')
+def admin_cinemas(request):
+    cinemas_list = Cinema.objects.all().order_by('-id')
+    
+    # Advanced Filtering
+    q = request.GET.get('q', '').strip()
+    if q:
+        cinemas_list = cinemas_list.filter(
+            models.Q(name__icontains=q) | 
+            models.Q(location__icontains=q)
+        )
+        
+    paginator = Paginator(cinemas_list, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'admin/cinema_manage.html', {
+        'page_obj': page_obj,
+        'search_query': q
+    })
+
+@staff_member_required(login_url='login')
+def admin_cinema_create(request):
+    form = CinemaForm()
+    if request.method == 'POST':
+        form = CinemaForm(request.POST, request.FILES)
+        if form.is_valid():
+            cinema = form.save()
+            messages.success(request, f"Thêm rạp '{cinema.name}' thành công!")
+            return redirect('admin-cinemas')
+            
+    return render(request, 'admin/cinema_form.html', {
+        'form': form,
+        'edit_mode': False
+    })
+
+@staff_member_required(login_url='login')
+def admin_cinema_edit(request, cinema_id):
+    cinema = get_object_or_404(Cinema, id=cinema_id)
+    if request.method == 'POST':
+        form = CinemaForm(request.POST, request.FILES, instance=cinema)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Cập nhật rạp '{cinema.name}' thành công!")
+            return redirect('admin-cinemas')
+    else:
+        form = CinemaForm(instance=cinema)
+        
+    return render(request, 'admin/cinema_form.html', {
+        'form': form,
+        'cinema': cinema,
+        'edit_mode': True
+    })
+
+@staff_member_required(login_url='login')
+def admin_cinema_delete(request, cinema_id):
+    cinema = get_object_or_404(Cinema, id=cinema_id)
+    name = cinema.name
+    cinema.delete()
+    messages.success(request, f"Đã xóa rạp '{name}' thành công!")
+    return redirect('admin-cinemas')
+
+
+# ==========================================
+# QUẢN LÝ LỊCH CHIẾU (SHOWTIME CRUD)
+# ==========================================
+@staff_member_required(login_url='login')
+def admin_showtimes(request):
+    showtimes_list = Showtime.objects.all().order_by('-start_time')
+    
+    # Advanced Filtering
+    movie_id = request.GET.get('movie', '').strip()
+    if movie_id:
+        showtimes_list = showtimes_list.filter(movie__id=movie_id)
+        
+    cinema_id = request.GET.get('cinema', '').strip()
+    if cinema_id:
+        showtimes_list = showtimes_list.filter(room__cinema__id=cinema_id)
+        
+    paginator = Paginator(showtimes_list, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    movies = Movie.objects.all()
+    cinemas = Cinema.objects.all()
+    
+    return render(request, 'admin/showtime_manage.html', {
+        'page_obj': page_obj,
+        'movies': movies,
+        'cinemas': cinemas,
+        'selected_movie': movie_id,
+        'selected_cinema': cinema_id
+    })
+
+@staff_member_required(login_url='login')
+def admin_showtime_create(request):
+    form = ShowtimeForm()
+    if request.method == 'POST':
+        form = ShowtimeForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Thêm suất chiếu mới thành công!")
+            return redirect('admin-showtimes')
+            
+    return render(request, 'admin/showtime_form.html', {
+        'form': form,
+        'edit_mode': False
+    })
+
+@staff_member_required(login_url='login')
+def admin_showtime_edit(request, showtime_id):
+    showtime = get_object_or_404(Showtime, id=showtime_id)
+    if request.method == 'POST':
+        form = ShowtimeForm(request.POST, instance=showtime)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Cập nhật suất chiếu thành công!")
+            return redirect('admin-showtimes')
+    else:
+        form = ShowtimeForm(instance=showtime)
+        
+    return render(request, 'admin/showtime_form.html', {
+        'form': form,
+        'showtime': showtime,
+        'edit_mode': True
+    })
+
+@staff_member_required(login_url='login')
+def admin_showtime_delete(request, showtime_id):
+    showtime = get_object_or_404(Showtime, id=showtime_id)
+    showtime.delete()
+    messages.success(request, "Đã xóa suất chiếu thành công!")
+    return redirect('admin-showtimes')
