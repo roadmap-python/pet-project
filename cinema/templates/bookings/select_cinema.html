@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Chọn Rạp Chiếu | {{ movie.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <!-- Breadcrumb -->
+    <nav class="flex mb-8 text-sm text-subtext" aria-label="Breadcrumb">
+        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+            <li class="inline-flex items-center">
+                <a href="{% url 'home' %}" class="hover:text-white transition-colors">Trang chủ</a>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <i class="fa-solid fa-chevron-right text-xs mx-2"></i>
+                    <a href="{% url 'movie-detail' movie.id %}" class="hover:text-white transition-colors">{{ movie.title }}</a>
+                </div>
+            </li>
+            <li aria-current="page">
+                <div class="flex items-center">
+                    <i class="fa-solid fa-chevron-right text-xs mx-2"></i>
+                    <span class="text-primary font-medium">Chọn Rạp</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+
+    <!-- Movie Overview Header -->
+    <div class="bg-card border border-border rounded-3xl p-6 md:p-8 mb-12 shadow-glass relative overflow-hidden flex flex-col md:flex-row gap-8 items-center">
+        <!-- Poster -->
+        <div class="w-40 h-56 md:w-48 md:h-72 rounded-2xl overflow-hidden border border-border shrink-0 shadow-lg">
+            {% if movie.poster_url %}
+                {% if "http" in movie.poster_url.name %}
+                    <img src="{{ movie.poster_url.name }}" alt="{{ movie.title }}" class="w-full h-full object-cover">
+                {% else %}
+                    <img src="{{ movie.poster_url.url }}" alt="{{ movie.title }}" class="w-full h-full object-cover">
+                {% endif %}
+            {% else %}
+                <div class="w-full h-full bg-secondary flex items-center justify-center">
+                    <i class="fa-solid fa-film text-4xl text-border"></i>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Info -->
+        <div class="flex-grow text-center md:text-left space-y-4">
+            <span class="bg-primary/20 text-primary border border-primary/30 px-3 py-1 rounded text-xs font-bold uppercase tracking-wider">
+                Đang Chiếu
+            </span>
+            <h1 class="text-3xl md:text-5xl font-heading font-bold text-white tracking-tight">
+                {{ movie.title }}
+            </h1>
+            <div class="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm font-medium text-subtext">
+                <div class="flex items-center gap-1.5 text-white">
+                    <i class="fa-solid fa-star text-primary"></i> 
+                    <span class="font-bold">{{ movie.rating }}</span>/10
+                </div>
+                <span>&bull;</span>
+                <div>{{ movie.duration }} phút</div>
+                <span>&bull;</span>
+                <div>{{ movie.genres.all|join:", "|default:"Hành Động, Phiêu Lưu" }}</div>
+            </div>
+            <p class="text-subtext max-w-3xl line-clamp-3 text-base leading-relaxed">
+                {{ movie.description }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Cinema Selector -->
+    <div class="space-y-6">
+        <div class="border-b border-border/50 pb-4">
+            <h2 class="text-2xl font-heading font-bold text-white flex items-center gap-3">
+                <span class="w-2 h-6 bg-primary rounded-full inline-block"></span>
+                Chọn Rạp Chiếu Phù Hợp
+            </h2>
+            <p class="text-sm text-subtext mt-1">Danh sách các rạp hiện có suất chiếu phim này hôm nay</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {% if cinemas %}
+                {% for cinema in cinemas %}
+                <div class="bg-card border border-border/60 rounded-2xl p-6 flex flex-col justify-between hover:border-primary/50 transition-all duration-300 group shadow-md hover:-translate-y-1">
+                    <div class="flex gap-4">
+                        <div class="w-16 h-16 rounded-xl bg-secondary flex items-center justify-center shrink-0 border border-border group-hover:bg-primary/10 transition-colors">
+                            <i class="fa-solid fa-location-dot text-primary text-2xl group-hover:scale-110 transition-transform"></i>
+                        </div>
+                        <div class="space-y-1">
+                            <h3 class="text-xl font-heading font-bold text-white group-hover:text-primary transition-colors">
+                                {{ cinema.name }}
+                            </h3>
+                            <p class="text-sm text-subtext">
+                                <i class="fa-regular fa-map mr-1"></i> {{ cinema.location }}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8 pt-4 border-t border-border/40 flex justify-end">
+                        <a href="{% url 'select-showtime' movie.id cinema.id %}" class="bg-secondary hover:bg-primary hover:text-background text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center gap-2 group-hover:shadow-glow">
+                            Xem Suất Chiếu
+                            <i class="fa-solid fa-arrow-right text-xs"></i>
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-span-full py-16 flex flex-col items-center justify-center border border-dashed border-border rounded-3xl">
+                    <div class="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-4 border border-border">
+                        <i class="fa-solid fa-circle-exclamation text-subtext text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-heading font-semibold text-white mb-1">Hiện không có suất chiếu</h3>
+                    <p class="text-subtext text-sm">Phim này hiện không có suất chiếu nào hoạt động. Vui lòng quay lại sau.</p>
+                    <a href="{% url 'home' %}" class="mt-6 bg-primary text-background px-6 py-2.5 rounded-xl font-bold hover:bg-primaryHover transition-all">
+                        Quay lại trang chủ
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

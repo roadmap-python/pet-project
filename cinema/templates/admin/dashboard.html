@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Admin Dashboard | LuxeCinema{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col lg:flex-row gap-8">
+    
+    <!-- Admin Sidebar -->
+    <aside class="w-full lg:w-64 shrink-0">
+        <div class="bg-card border border-border rounded-3xl p-6 space-y-6 shadow-glass">
+            <div class="text-xs font-bold uppercase tracking-wider text-subtext pb-2 border-b border-border/40">Bảng Quản Trị</div>
+            <nav class="flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-visible">
+                <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}bg-primary/10 border border-primary/20 text-primary{% else %}hover:bg-secondary/40 text-subtext hover:text-white{% endif %} px-4 py-3 rounded-xl flex items-center gap-3 font-semibold text-sm shrink-0 w-auto lg:w-full transition-all border border-transparent">
+                    <i class="fa-solid fa-chart-line w-4 text-center"></i>
+                    Tổng Quan
+                </a>
+                <a href="{% url 'admin-bookings' %}" class="{% if request.resolver_match.url_name == 'admin-bookings' %}bg-primary/10 border border-primary/20 text-primary{% else %}hover:bg-secondary/40 text-subtext hover:text-white{% endif %} px-4 py-3 rounded-xl flex items-center gap-3 font-semibold text-sm shrink-0 w-auto lg:w-full transition-all border border-transparent">
+                    <i class="fa-solid fa-ticket w-4 text-center"></i>
+                    Quản Lý Đặt Vé
+                </a>
+                <a href="{% url 'admin-movies' %}" class="{% if request.resolver_match.url_name == 'admin-movies' or 'movie-edit' in request.resolver_match.url_name %}bg-primary/10 border border-primary/20 text-primary{% else %}hover:bg-secondary/40 text-subtext hover:text-white{% endif %} px-4 py-3 rounded-xl flex items-center gap-3 font-semibold text-sm shrink-0 w-auto lg:w-full transition-all border border-transparent">
+                    <i class="fa-solid fa-film w-4 text-center"></i>
+                    Quản Lý Phim
+                </a>
+                <a href="{% url 'admin-cinemas' %}" class="{% if request.resolver_match.url_name == 'admin-cinemas' or 'cinema-edit' in request.resolver_match.url_name %}bg-primary/10 border border-primary/20 text-primary{% else %}hover:bg-secondary/40 text-subtext hover:text-white{% endif %} px-4 py-3 rounded-xl flex items-center gap-3 font-semibold text-sm shrink-0 w-auto lg:w-full transition-all border border-transparent">
+                    <i class="fa-solid fa-building w-4 text-center"></i>
+                    Quản Lý Rạp
+                </a>
+                <a href="{% url 'admin-showtimes' %}" class="{% if request.resolver_match.url_name == 'admin-showtimes' or 'showtime-edit' in request.resolver_match.url_name %}bg-primary/10 border border-primary/20 text-primary{% else %}hover:bg-secondary/40 text-subtext hover:text-white{% endif %} px-4 py-3 rounded-xl flex items-center gap-3 font-semibold text-sm shrink-0 w-auto lg:w-full transition-all border border-transparent">
+                    <i class="fa-solid fa-clock w-4 text-center"></i>
+                    Quản Lý Lịch Chiếu
+                </a>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Admin Content Area -->
+    <div class="flex-grow space-y-8">
+        <div>
+            <h1 class="text-3xl font-heading font-black text-white">Tổng Quan Hệ Thống</h1>
+            <p class="text-sm text-subtext mt-1">Số liệu thống kê thời gian thực của hệ thống rạp LuxeCinema</p>
+        </div>
+
+        <!-- Metric Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Revenue -->
+            <div class="bg-card border border-border rounded-3xl p-6 space-y-2 relative overflow-hidden shadow-md">
+                <div class="absolute -right-4 -top-4 w-16 h-16 bg-primary/5 rounded-full blur-2xl"></div>
+                <div class="text-subtext text-xs font-bold uppercase tracking-wider">Doanh Thu Thu Được</div>
+                <div class="text-2xl font-black text-primary">{{ total_revenue|floatformat:0 }} đ</div>
+                <div class="text-[10px] text-success font-semibold flex items-center gap-1">
+                    <i class="fa-solid fa-arrow-trend-up"></i>
+                    <span>Tích lũy từ đầu hệ thống</span>
+                </div>
+            </div>
+
+            <!-- Tickets Sold -->
+            <div class="bg-card border border-border rounded-3xl p-6 space-y-2 relative overflow-hidden shadow-md">
+                <div class="absolute -right-4 -top-4 w-16 h-16 bg-success/5 rounded-full blur-2xl"></div>
+                <div class="text-subtext text-xs font-bold uppercase tracking-wider">Vé Đã Xác Nhận</div>
+                <div class="text-2xl font-black text-white">{{ total_tickets_sold }} vé</div>
+                <div class="text-[10px] text-subtext font-medium">Từ các đặt chỗ thành công</div>
+            </div>
+
+            <!-- Active Showtimes Today -->
+            <div class="bg-card border border-border rounded-3xl p-6 space-y-2 relative overflow-hidden shadow-md">
+                <div class="absolute -right-4 -top-4 w-16 h-16 bg-blue-500/5 rounded-full blur-2xl"></div>
+                <div class="text-subtext text-xs font-bold uppercase tracking-wider">Suất Chiếu Hôm Nay</div>
+                <div class="text-2xl font-black text-white">{{ total_showtimes }} suất</div>
+                <div class="text-[10px] text-primary font-semibold">Tất cả các rạp chiếu</div>
+            </div>
+
+            <!-- Total Movies -->
+            <div class="bg-card border border-border rounded-3xl p-6 space-y-2 relative overflow-hidden shadow-md">
+                <div class="absolute -right-4 -top-4 w-16 h-16 bg-purple-500/5 rounded-full blur-2xl"></div>
+                <div class="text-subtext text-xs font-bold uppercase tracking-wider">Tổng Số Phim</div>
+                <div class="text-2xl font-black text-white">{{ total_movies }} phim</div>
+                <div class="text-[10px] text-subtext font-medium">Bao gồm cả phim sắp chiếu</div>
+            </div>
+        </div>
+
+        <!-- Recent Transactions Table -->
+        <div class="bg-card border border-border rounded-3xl p-6 shadow-glass space-y-4">
+            <h3 class="text-xl font-heading font-bold text-white">Giao Dịch Gần Đây</h3>
+            
+            <div class="overflow-x-auto -mx-6 px-6">
+                <table class="min-w-full divide-y divide-border/40 text-sm">
+                    <thead>
+                        <tr class="text-left text-xs font-bold text-subtext uppercase tracking-wider">
+                            <th class="pb-3 pr-4">Mã Đơn</th>
+                            <th class="pb-3 px-4">Khách Hàng</th>
+                            <th class="pb-3 px-4">Phim</th>
+                            <th class="pb-3 px-4">Thành Tiền</th>
+                            <th class="pb-3 pl-4">Trạng Thái</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border/30 text-white font-medium">
+                        {% if recent_bookings %}
+                            {% for booking in recent_bookings %}
+                            <tr class="hover:bg-secondary/10 transition-colors">
+                                <td class="py-4 pr-4 font-mono text-primary">#{{ booking.id }}</td>
+                                <td class="py-4 px-4">
+                                    <div class="font-bold text-white">{{ booking.user.first_name|default:booking.user.username }}</div>
+                                    <div class="text-xs text-subtext mt-0.5">{{ booking.user.email }}</div>
+                                </td>
+                                <td class="py-4 px-4">
+                                    <div>{{ booking.showtime.movie.title }}</div>
+                                    <div class="text-xs text-subtext mt-0.5">{{ booking.showtime.room.cinema.name }}</div>
+                                </td>
+                                <td class="py-4 px-4">{{ booking.payment.amount|floatformat:0 }} đ</td>
+                                <td class="py-4 pl-4">
+                                    {% if booking.status == 'CONFIRMED' %}
+                                        <span class="bg-success/20 text-success border border-success/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
+                                            Thành công
+                                        </span>
+                                    {% elif booking.status == 'PENDING' %}
+                                        <span class="bg-warning/20 text-warning border border-warning/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider animate-pulse">
+                                            Chờ
+                                        </span>
+                                    {% else %}
+                                        <span class="bg-danger/20 text-danger border border-danger/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
+                                            Đã hủy
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="py-12 text-center text-subtext">Không có giao dịch gần đây nào.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

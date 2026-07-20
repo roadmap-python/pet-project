@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quản Lý Lịch Chiếu | LuxeCinema{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col lg:flex-row gap-8">
+    
+    <!-- Admin Sidebar -->
+    <aside class="w-full lg:w-64 shrink-0">
+        <div class="bg-card border border-border rounded-3xl p-6 space-y-6 shadow-glass">
+            <div class="text-xs font-bold uppercase tracking-wider text-subtext pb-2 border-b border-border/40">Bảng Quản Trị</div>
+            <nav class="flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-visible">
+                <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}bg-primary/10 border border-primary/20 text-primary{% else %}hover:bg-secondary/40 text-subtext hover:text-white{% endif %} px-4 py-3 rounded-xl flex items-center gap-3 font-semibold text-sm shrink-0 w-auto lg:w-full transition-all border border-transparent">
+                    <i class="fa-solid fa-chart-line w-4 text-center"></i>
+                    Tổng Quan
+                </a>
+                <a href="{% url 'admin-bookings' %}" class="{% if request.resolver_match.url_name == 'admin-bookings' %}bg-primary/10 border border-primary/20 text-primary{% else %}hover:bg-secondary/40 text-subtext hover:text-white{% endif %} px-4 py-3 rounded-xl flex items-center gap-3 font-semibold text-sm shrink-0 w-auto lg:w-full transition-all border border-transparent">
+                    <i class="fa-solid fa-ticket w-4 text-center"></i>
+                    Quản Lý Đặt Vé
+                </a>
+                <a href="{% url 'admin-movies' %}" class="{% if request.resolver_match.url_name == 'admin-movies' or 'movie-edit' in request.resolver_match.url_name %}bg-primary/10 border border-primary/20 text-primary{% else %}hover:bg-secondary/40 text-subtext hover:text-white{% endif %} px-4 py-3 rounded-xl flex items-center gap-3 font-semibold text-sm shrink-0 w-auto lg:w-full transition-all border border-transparent">
+                    <i class="fa-solid fa-film w-4 text-center"></i>
+                    Quản Lý Phim
+                </a>
+                <a href="{% url 'admin-cinemas' %}" class="{% if request.resolver_match.url_name == 'admin-cinemas' or 'cinema-edit' in request.resolver_match.url_name %}bg-primary/10 border border-primary/20 text-primary{% else %}hover:bg-secondary/40 text-subtext hover:text-white{% endif %} px-4 py-3 rounded-xl flex items-center gap-3 font-semibold text-sm shrink-0 w-auto lg:w-full transition-all border border-transparent">
+                    <i class="fa-solid fa-building w-4 text-center"></i>
+                    Quản Lý Rạp
+                </a>
+                <a href="{% url 'admin-showtimes' %}" class="{% if request.resolver_match.url_name == 'admin-showtimes' or 'showtime-edit' in request.resolver_match.url_name %}bg-primary/10 border border-primary/20 text-primary{% else %}hover:bg-secondary/40 text-subtext hover:text-white{% endif %} px-4 py-3 rounded-xl flex items-center gap-3 font-semibold text-sm shrink-0 w-auto lg:w-full transition-all border border-transparent">
+                    <i class="fa-solid fa-clock w-4 text-center"></i>
+                    Quản Lý Lịch Chiếu
+                </a>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Admin Content Area -->
+    <div class="flex-grow space-y-8">
+        
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+                <h1 class="text-3xl font-heading font-black text-white">Quản Lý Lịch Chiếu</h1>
+                <p class="text-sm text-subtext mt-1">Lập lịch trình phát sóng các suất phim tại phòng chiếu</p>
+            </div>
+            <a href="{% url 'admin-showtime-create' %}" class="px-5 py-3 bg-primary text-background font-bold text-sm rounded-xl hover:bg-primaryHover transition-all flex items-center gap-2 shadow-glow">
+                <i class="fa-solid fa-plus"></i> Thêm Suất Chiếu
+            </a>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="bg-success/20 border border-success/40 text-white px-4 py-3 rounded-2xl shadow-lg">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Filter controls -->
+        <div class="bg-card border border-border rounded-3xl p-6 shadow-glass">
+            <form method="GET" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <!-- Movie Select Filter -->
+                <div>
+                    <select name="movie" class="w-full bg-background border border-border rounded-xl py-2.5 px-4 text-xs text-white focus:ring-1 focus:ring-primary focus:border-transparent transition-all cursor-pointer">
+                        <option value="">Tất cả phim</option>
+                        {% for movie in movies %}
+                            <option value="{{ movie.id }}" {% if selected_movie == movie.id|stringformat:"s" %}selected{% endif %}>{{ movie.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Cinema Select Filter -->
+                <div>
+                    <select name="cinema" class="w-full bg-background border border-border rounded-xl py-2.5 px-4 text-xs text-white focus:ring-1 focus:ring-primary focus:border-transparent transition-all cursor-pointer">
+                        <option value="">Tất cả rạp chiếu</option>
+                        {% for cinema in cinemas %}
+                            <option value="{{ cinema.id }}" {% if selected_cinema == cinema.id|stringformat:"s" %}selected{% endif %}>{{ cinema.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Action Button -->
+                <div class="flex gap-2">
+                    <button type="submit" class="flex-grow bg-secondary text-white font-bold text-xs py-2.5 rounded-xl hover:bg-border transition-all">
+                        Lọc Suất Chiếu
+                    </button>
+                    {% if selected_movie or selected_cinema %}
+                        <a href="{% url 'admin-showtimes' %}" class="px-4 py-2.5 border border-border rounded-xl text-xs font-bold text-white hover:bg-secondary/40 transition-all flex items-center justify-center">
+                            Reset
+                        </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
+        <!-- Showtime List Table -->
+        <div class="bg-card border border-border rounded-3xl p-6 shadow-glass overflow-hidden">
+            <div class="overflow-x-auto -mx-6 px-6">
+                <table class="min-w-full divide-y divide-border/40 text-sm">
+                    <thead>
+                        <tr class="text-left text-xs font-bold text-subtext uppercase tracking-wider">
+                            <th class="pb-3 pr-4">Phim</th>
+                            <th class="pb-3 px-4">Rạp & Phòng</th>
+                            <th class="pb-3 px-4">Thời Gian</th>
+                            <th class="pb-3 px-4">Giá Vé Gốc</th>
+                            <th class="pb-3 pl-4 text-right">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border/30 text-white font-medium">
+                        {% if page_obj %}
+                            {% for showtime in page_obj %}
+                            <tr class="hover:bg-secondary/10 transition-colors">
+                                <td class="py-3 pr-4">
+                                    <div class="font-bold text-white">{{ showtime.movie.title }}</div>
+                                    <div class="text-xs text-subtext mt-0.5">{{ showtime.movie.duration }} phút</div>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <div>{{ showtime.room.cinema.name }}</div>
+                                    <div class="text-xs text-subtext mt-0.5">{{ showtime.room.name }}</div>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <div>{{ showtime.start_time|date:"H:i" }} - {{ showtime.end_time|date:"H:i" }}</div>
+                                    <div class="text-xs text-subtext mt-0.5">{{ showtime.start_time|date:"d/m/Y" }}</div>
+                                </td>
+                                <td class="py-3 px-4 font-bold text-primary">{{ showtime.base_price|floatformat:0 }} đ</td>
+                                <td class="py-3 pl-4 text-right space-x-2">
+                                    <a href="{% url 'admin-showtime-edit' showtime.id %}" class="text-primary hover:text-primaryHover text-xs font-bold">
+                                        <i class="fa-solid fa-pen-to-square mr-1"></i> Sửa
+                                    </a>
+                                    <a href="{% url 'admin-showtime-delete' showtime.id %}" onclick="return confirm('Bạn chắc chắn muốn xóa suất chiếu này?')" class="text-danger hover:text-red-400 text-xs font-bold">
+                                        <i class="fa-solid fa-trash mr-1"></i> Xóa
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="py-12 text-center text-subtext">Không tìm thấy suất chiếu nào khớp điều kiện lọc.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination UI -->
+            {% if page_obj.has_other_pages %}
+            <div class="pt-6 border-t border-border/40 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-subtext">
+                <div>
+                    Hiển thị từ {{ page_obj.start_index }} đến {{ page_obj.end_index }} trong số {{ page_obj.paginator.count }} bản ghi
+                </div>
+                <div class="flex gap-1.5 flex-wrap">
+                    {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}{% if selected_movie %}&movie={{ selected_movie }}{% endif %}{% if selected_cinema %}&cinema={{ selected_cinema }}{% endif %}" class="px-3 py-1.5 border border-border rounded-lg hover:bg-secondary/40 hover:text-white transition-all">Trước</a>
+                    {% else %}
+                        <button class="px-3 py-1.5 border border-border/40 rounded-lg text-subtext/40 cursor-not-allowed" disabled>Trước</button>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <span class="px-3 py-1.5 bg-primary text-background font-bold rounded-lg">{{ num }}</span>
+                        {% else %}
+                            <a href="?page={{ num }}{% if selected_movie %}&movie={{ selected_movie }}{% endif %}{% if selected_cinema %}&cinema={{ selected_cinema }}{% endif %}" class="px-3 py-1.5 border border-border rounded-lg hover:bg-secondary/40 hover:text-white transition-all">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}{% if selected_movie %}&movie={{ selected_movie }}{% endif %}{% if selected_cinema %}&cinema={{ selected_cinema }}{% endif %}" class="px-3 py-1.5 border border-border rounded-lg hover:bg-secondary/40 hover:text-white transition-all">Sau</a>
+                    {% else %}
+                        <button class="px-3 py-1.5 border border-border/40 rounded-lg text-subtext/40 cursor-not-allowed" disabled>Sau</button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

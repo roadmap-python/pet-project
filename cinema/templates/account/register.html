@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Đăng Ký Thành Viên | LuxeCinema{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-center min-h-[calc(100vh-160px)] px-4 py-12">
+    <div class="max-w-xl w-full bg-card border border-border rounded-3xl shadow-2xl p-8 relative overflow-hidden">
+        <!-- Ambient background glows -->
+        <div class="absolute -top-10 -right-10 w-40 h-40 bg-primary/10 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-accent/5 rounded-full blur-3xl"></div>
+        
+        <div class="text-center mb-8 relative z-10">
+            <h2 class="text-3xl font-heading font-black text-white tracking-tight">Đăng Ký Thành Viên</h2>
+            <p class="text-subtext mt-2 text-sm">Trải nghiệm điện ảnh đỉnh cao cùng nhiều đặc quyền hấp dẫn</p>
+        </div>
+
+        <form method="POST" action="{% url 'register' %}" class="space-y-5 relative z-10">
+            {% csrf_token %}
+            
+            <!-- Global / Non-field Errors -->
+            {% if form.non_field_errors %}
+                <div class="bg-danger/25 border border-danger/45 text-white px-4 py-2.5 rounded-xl text-sm text-center mb-4 shadow-lg">
+                    {{ form.non_field_errors.0 }}
+                </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <!-- Full name -->
+                <div class="space-y-1.5">
+                    <label for="full_name" class="block text-sm font-medium text-subtext">Họ và tên</label>
+                    <input type="text" name="full_name" id="full_name" required placeholder="Nguyễn Văn A"
+                           class="block w-full px-4 py-3 bg-background border border-border rounded-xl text-white placeholder-subtext focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                           value="{{ form.full_name.value|default:'' }}">
+                    {% if form.full_name.errors %}
+                        <p class="text-danger text-xs mt-1 font-semibold">{{ form.full_name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Phone number -->
+                <div class="space-y-1.5">
+                    <label for="phone_number" class="block text-sm font-medium text-subtext">Số điện thoại</label>
+                    <input type="text" name="phone_number" id="phone_number" required placeholder="0912345678"
+                           class="block w-full px-4 py-3 bg-background border border-border rounded-xl text-white placeholder-subtext focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                           value="{{ form.phone_number.value|default:'' }}">
+                    {% if form.phone_number.errors %}
+                        <p class="text-danger text-xs mt-1 font-semibold">{{ form.phone_number.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Email -->
+            <div class="space-y-1.5">
+                <label for="email" class="block text-sm font-medium text-subtext">Email liên hệ</label>
+                <input type="email" name="email" id="email" required placeholder="name@example.com"
+                       class="block w-full px-4 py-3 bg-background border border-border rounded-xl text-white placeholder-subtext focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                       value="{{ form.email.value|default:'' }}">
+                {% if form.email.errors %}
+                    <p class="text-danger text-xs mt-1 font-semibold">{{ form.email.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Password -->
+            <div class="space-y-1.5">
+                <label for="password" class="block text-sm font-medium text-subtext">Mật khẩu</label>
+                <input type="password" name="password" id="password" required placeholder="Tối thiểu 6 ký tự"
+                       class="block w-full px-4 py-3 bg-background border border-border rounded-xl text-white placeholder-subtext focus:ring-2 focus:ring-primary focus:border-transparent transition-all">
+                {% if form.password.errors %}
+                    <p class="text-danger text-xs mt-1 font-semibold">{{ form.password.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Confirm Password -->
+            <div class="space-y-1.5">
+                <label for="confirm_password" class="block text-sm font-medium text-subtext">Xác nhận mật khẩu</label>
+                <input type="password" name="confirm_password" id="confirm_password" required placeholder="Nhập lại mật khẩu"
+                       class="block w-full px-4 py-3 bg-background border border-border rounded-xl text-white placeholder-subtext focus:ring-2 focus:ring-primary focus:border-transparent transition-all">
+                {% if form.confirm_password.errors %}
+                    <p class="text-danger text-xs mt-1 font-semibold">{{ form.confirm_password.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div class="flex items-start pt-1">
+                <input type="checkbox" id="terms" required class="h-4 w-4 mt-0.5 bg-background border-border rounded text-primary focus:ring-primary">
+                <label for="terms" class="ml-2 block text-xs text-subtext leading-relaxed">
+                    Tôi đồng ý với các <a href="#" class="text-primary hover:underline">Điều khoản dịch vụ</a> và <a href="#" class="text-primary hover:underline">Chính sách bảo mật</a> của LuxeCinema.
+                </label>
+            </div>
+
+            <button type="submit" class="w-full bg-primary hover:bg-primaryHover text-background font-bold py-3.5 px-4 rounded-xl shadow-glow transition-all mt-4">
+                Đăng Ký Tài Khoản
+            </button>
+        </form>
+
+        <div class="mt-6 text-center text-sm text-subtext relative z-10">
+            Đã có tài khoản? <a href="{% url 'login' %}" class="text-primary hover:text-primaryHover font-bold transition-colors">Đăng nhập ngay</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

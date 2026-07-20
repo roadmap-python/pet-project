@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Thanh Toán Vé | {{ booking.showtime.movie.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10" x-data="{ paymentMethod: 'BANK_CARD' }">
+    <!-- Breadcrumb -->
+    <nav class="flex mb-8 text-sm text-subtext" aria-label="Breadcrumb">
+        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+            <li class="inline-flex items-center">
+                <a href="{% url 'home' %}" class="hover:text-white transition-colors">Trang chủ</a>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <i class="fa-solid fa-chevron-right text-xs mx-2"></i>
+                    <a href="{% url 'movie-detail' booking.showtime.movie.id %}" class="hover:text-white transition-colors">{{ booking.showtime.movie.title }}</a>
+                </div>
+            </li>
+            <li aria-current="page">
+                <div class="flex items-center">
+                    <i class="fa-solid fa-chevron-right text-xs mx-2"></i>
+                    <span class="text-primary font-medium">Thanh toán</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+
+    <!-- Booking Steps Progress -->
+    <div class="grid grid-cols-4 gap-2 mb-10 text-center text-xs md:text-sm font-semibold max-w-2xl mx-auto">
+        <div class="pb-2 border-b-2 border-primary text-subtext">1. Chọn Rạp & Suất</div>
+        <div class="pb-2 border-b-2 border-primary text-subtext">2. Chọn Ghế Ngồi</div>
+        <div class="pb-2 border-b-2 border-primary text-primary">3. Thanh Toán</div>
+        <div class="pb-2 border-b-2 border-border text-subtext">4. Nhận Vé</div>
+    </div>
+
+    <!-- Error Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="bg-danger/20 border border-danger/40 text-white px-4 py-3 rounded-2xl text-center mb-6 shadow-lg">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-8 items-start">
+        <!-- Billing & Payment Forms -->
+        <div class="md:col-span-3 space-y-6">
+            <div class="bg-card border border-border rounded-3xl p-6 md:p-8 space-y-6">
+                <h3 class="text-xl font-heading font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-wallet text-primary"></i>
+                    Chọn Phương Thức Thanh Toán
+                </h3>
+                
+                <form id="payment-form" method="POST" class="space-y-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="payment_method" :value="paymentMethod">
+
+                    <!-- Bank Card Option -->
+                    <div @click="paymentMethod = 'BANK_CARD'"
+                         :class="{'border-primary bg-primary/5': paymentMethod === 'BANK_CARD', 'border-border bg-background': paymentMethod !== 'BANK_CARD'}"
+                         class="border rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-all duration-300 hover:border-primary/50">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center border border-border">
+                                <i class="fa-solid fa-credit-card text-primary text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-white text-sm md:text-base">Thẻ Ngân Hàng / Quốc Tế</h4>
+                                <p class="text-xs text-subtext mt-0.5">Hỗ trợ Visa, Mastercard, JCB, Napas</p>
+                            </div>
+                        </div>
+                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center"
+                             :class="{'border-primary': paymentMethod === 'BANK_CARD', 'border-border': paymentMethod !== 'BANK_CARD'}">
+                            <div class="w-2.5 h-2.5 rounded-full bg-primary" x-show="paymentMethod === 'BANK_CARD'"></div>
+                        </div>
+                    </div>
+
+                    <!-- MoMo Option -->
+                    <div @click="paymentMethod = 'MOMO'"
+                         :class="{'border-primary bg-primary/5': paymentMethod === 'MOMO', 'border-border bg-background': paymentMethod !== 'MOMO'}"
+                         class="border rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-all duration-300 hover:border-primary/50">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center border border-border">
+                                <i class="fa-solid fa-qrcode text-pink-500 text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-white text-sm md:text-base">Ví Điện Tử MoMo</h4>
+                                <p class="text-xs text-subtext mt-0.5">Thanh toán nhanh chóng bằng mã QR</p>
+                            </div>
+                        </div>
+                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center"
+                             :class="{'border-primary': paymentMethod === 'MOMO', 'border-border': paymentMethod !== 'MOMO'}">
+                            <div class="w-2.5 h-2.5 rounded-full bg-primary" x-show="paymentMethod === 'MOMO'"></div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Virtual Credit Card Simulation Visual -->
+            <div x-show="paymentMethod === 'BANK_CARD'" x-transition class="bg-gradient-to-br from-zinc-800 to-zinc-900 border border-border rounded-3xl p-6 shadow-glow-accent relative overflow-hidden h-48 flex flex-col justify-between">
+                <div class="absolute -right-8 -top-8 w-32 h-32 bg-primary/10 rounded-full blur-3xl"></div>
+                <div class="flex justify-between items-center">
+                    <span class="text-subtext font-bold text-xs uppercase tracking-widest">LUXECINEMA VIP</span>
+                    <i class="fa-solid fa-bolt text-primary text-xl"></i>
+                </div>
+                <div class="space-y-1">
+                    <span class="text-lg font-mono text-white tracking-widest">**** **** **** {{ booking.id|stringformat:"04d" }}</span>
+                    <p class="text-xs text-subtext font-medium uppercase mt-2">{{ request.user.first_name|default:request.user.username }}</p>
+                </div>
+                <div class="flex justify-between items-center text-[10px] text-subtext font-bold">
+                    <span>EXPIRES: 12/30</span>
+                    <span>CVV: ***</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Summary Column -->
+        <div class="md:col-span-2 bg-card border border-border rounded-3xl p-6 space-y-6 shadow-glass">
+            <h3 class="text-xl font-heading font-bold text-white pb-3 border-b border-border/50">Tóm Tắt Đơn Vé</h3>
+            
+            <div class="space-y-4 text-sm">
+                <div>
+                    <span class="text-subtext block text-xs">Mã đặt vé</span>
+                    <span class="font-bold text-white text-base">#{{ booking.id }}</span>
+                </div>
+                <div>
+                    <span class="text-subtext block text-xs">Tên Phim</span>
+                    <span class="font-bold text-white text-base">{{ booking.showtime.movie.title }}</span>
+                </div>
+                <div>
+                    <span class="text-subtext block text-xs">Rạp & Phòng</span>
+                    <span class="font-semibold text-white">{{ booking.showtime.room.cinema.name }}</span>
+                    <p class="text-xs text-subtext">{{ booking.showtime.room.name }}</p>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <span class="text-subtext block text-xs">Suất Chiếu</span>
+                        <span class="font-semibold text-white">{{ booking.showtime.start_time|date:"H:i" }}</span>
+                    </div>
+                    <div>
+                        <span class="text-subtext block text-xs">Ngày Chiếu</span>
+                        <span class="font-semibold text-white">{{ booking.showtime.start_time|date:"d/m/Y" }}</span>
+                    </div>
+                </div>
+                <div>
+                    <span class="text-subtext block text-xs">Ghế Ngồi</span>
+                    <span class="font-bold text-white text-lg">{{ seats_str }}</span>
+                </div>
+                
+                <div class="pt-4 border-t border-border/40 flex justify-between items-center text-base">
+                    <span class="text-white font-bold">Tổng tiền:</span>
+                    <span class="text-2xl font-black text-primary">{{ payment.amount|floatformat:0 }} đ</span>
+                </div>
+            </div>
+
+            <button type="submit" form="payment-form"
+                    class="w-full bg-primary text-background font-bold py-4 rounded-2xl hover:bg-primaryHover transition-all duration-300 shadow-glow flex items-center justify-center gap-3 focus:outline-none">
+                <i class="fa-solid fa-lock"></i>
+                Thanh Toán Ngay
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

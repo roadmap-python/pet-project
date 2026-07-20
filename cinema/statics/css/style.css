@@ -1,0 +1,60 @@
+/* Custom Movie Card Hover Effect */
+.movie-card img {
+    transition: transform 0.3s ease;
+}
+.movie-card:hover img {
+    transform: scale(1.05);
+}
+.movie-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.movie-card:hover .movie-overlay {
+    opacity: 1;
+}
+
+/* Biểu diễn rạp chiếu & Ghế */
+.screen {
+    box-shadow: 0 10px 20px rgba(255, 255, 255, 0.1);
+    transform: perspective(200px) rotateX(-5deg);
+}
+
+.seat, .seat-demo {
+    width: 35px;
+    height: 35px;
+    background-color: #444;
+    border-radius: 8px 8px 4px 4px;
+    cursor: pointer;
+    transition: transform 0.1s, background-color 0.2s;
+}
+
+.seat-demo {
+    width: 20px;
+    height: 20px;
+    cursor: default;
+}
+
+.seat.available:hover {
+    transform: scale(1.1);
+    background-color: #666;
+}
+
+.seat.selected, .seat-demo.selected {
+    background-color: #ffc107; /* Warning color */
+}
+
+.seat.VIP, .seat-demo.VIP {
+    background-color: #dc3545; /* Đỏ cho VIP */
+}
+
+.seat.sold, .seat-demo.sold {
+    background-color: #222;
+    cursor: not-allowed;
+}
+
+.seat.sold:hover {
+    transform: scale(1);
+}

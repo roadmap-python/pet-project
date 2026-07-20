@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quản Lý Rạp Chiếu | LuxeCinema{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col lg:flex-row gap-8">
+    
+    <!-- Admin Sidebar -->
+    <aside class="w-full lg:w-64 shrink-0">
+        <div class="bg-card border border-border rounded-3xl p-6 space-y-6 shadow-glass">
+            <div class="text-xs font-bold uppercase tracking-wider text-subtext pb-2 border-b border-border/40">Bảng Quản Trị</div>
+            <nav class="flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-visible">
+                <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}bg-primary/10 border border-primary/20 text-primary{% else %}hover:bg-secondary/40 text-subtext hover:text-white{% endif %} px-4 py-3 rounded-xl flex items-center gap-3 font-semibold text-sm shrink-0 w-auto lg:w-full transition-all border border-transparent">
+                    <i class="fa-solid fa-chart-line w-4 text-center"></i>
+                    Tổng Quan
+                </a>
+                <a href="{% url 'admin-bookings' %}" class="{% if request.resolver_match.url_name == 'admin-bookings' %}bg-primary/10 border border-primary/20 text-primary{% else %}hover:bg-secondary/40 text-subtext hover:text-white{% endif %} px-4 py-3 rounded-xl flex items-center gap-3 font-semibold text-sm shrink-0 w-auto lg:w-full transition-all border border-transparent">
+                    <i class="fa-solid fa-ticket w-4 text-center"></i>
+                    Quản Lý Đặt Vé
+                </a>
+                <a href="{% url 'admin-movies' %}" class="{% if request.resolver_match.url_name == 'admin-movies' or 'movie-edit' in request.resolver_match.url_name %}bg-primary/10 border border-primary/20 text-primary{% else %}hover:bg-secondary/40 text-subtext hover:text-white{% endif %} px-4 py-3 rounded-xl flex items-center gap-3 font-semibold text-sm shrink-0 w-auto lg:w-full transition-all border border-transparent">
+                    <i class="fa-solid fa-film w-4 text-center"></i>
+                    Quản Lý Phim
+                </a>
+                <a href="{% url 'admin-cinemas' %}" class="{% if request.resolver_match.url_name == 'admin-cinemas' or 'cinema-edit' in request.resolver_match.url_name %}bg-primary/10 border border-primary/20 text-primary{% else %}hover:bg-secondary/40 text-subtext hover:text-white{% endif %} px-4 py-3 rounded-xl flex items-center gap-3 font-semibold text-sm shrink-0 w-auto lg:w-full transition-all border border-transparent">
+                    <i class="fa-solid fa-building w-4 text-center"></i>
+                    Quản Lý Rạp
+                </a>
+                <a href="{% url 'admin-showtimes' %}" class="{% if request.resolver_match.url_name == 'admin-showtimes' or 'showtime-edit' in request.resolver_match.url_name %}bg-primary/10 border border-primary/20 text-primary{% else %}hover:bg-secondary/40 text-subtext hover:text-white{% endif %} px-4 py-3 rounded-xl flex items-center gap-3 font-semibold text-sm shrink-0 w-auto lg:w-full transition-all border border-transparent">
+                    <i class="fa-solid fa-clock w-4 text-center"></i>
+                    Quản Lý Lịch Chiếu
+                </a>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Admin Content Area -->
+    <div class="flex-grow space-y-8">
+        
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+                <h1 class="text-3xl font-heading font-black text-white">Quản Lý Rạp Chiếu</h1>
+                <p class="text-sm text-subtext mt-1">Cấu hình hệ thống rạp và địa chỉ phòng chiếu</p>
+            </div>
+            <a href="{% url 'admin-cinema-create' %}" class="px-5 py-3 bg-primary text-background font-bold text-sm rounded-xl hover:bg-primaryHover transition-all flex items-center gap-2 shadow-glow">
+                <i class="fa-solid fa-plus"></i> Thêm Rạp Mới
+            </a>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="bg-success/20 border border-success/40 text-white px-4 py-3 rounded-2xl shadow-lg">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Filters -->
+        <div class="bg-card border border-border rounded-3xl p-6 shadow-glass">
+            <form method="GET" class="flex flex-col sm:flex-row gap-4 items-center">
+                <!-- Search Query -->
+                <div class="relative w-full sm:flex-grow">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-subtext">
+                        <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                    </div>
+                    <input type="text" name="q" placeholder="Tìm tên rạp hoặc địa điểm..." value="{{ search_query }}"
+                           class="w-full bg-background border border-border rounded-xl py-2.5 pl-9 pr-4 text-xs text-white placeholder-subtext focus:ring-1 focus:ring-primary focus:border-transparent transition-all">
+                </div>
+
+                <!-- Action Button -->
+                <div class="flex gap-2 w-full sm:w-auto shrink-0">
+                    <button type="submit" class="flex-grow sm:flex-none px-6 bg-secondary text-white font-bold text-xs py-2.5 rounded-xl hover:bg-border transition-all">
+                        Lọc Dữ Liệu
+                    </button>
+                    {% if search_query %}
+                        <a href="{% url 'admin-cinemas' %}" class="px-4 py-2.5 border border-border rounded-xl text-xs font-bold text-white hover:bg-secondary/40 transition-all flex items-center justify-center">
+                            Reset
+                        </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
+        <!-- Cinema List Table -->
+        <div class="bg-card border border-border rounded-3xl p-6 shadow-glass overflow-hidden">
+            <div class="overflow-x-auto -mx-6 px-6">
+                <table class="min-w-full divide-y divide-border/40 text-sm">
+                    <thead>
+                        <tr class="text-left text-xs font-bold text-subtext uppercase tracking-wider">
+                            <th class="pb-3 pr-4">Mặt Tiền Rạp</th>
+                            <th class="pb-3 px-4">Tên Rạp</th>
+                            <th class="pb-3 px-4">Địa Chỉ / Vị Trí</th>
+                            <th class="pb-3 pl-4 text-right">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border/30 text-white font-medium">
+                        {% if page_obj %}
+                            {% for cinema in page_obj %}
+                            <tr class="hover:bg-secondary/10 transition-colors">
+                                <td class="py-3 pr-4">
+                                    <div class="w-14 h-10 rounded-lg overflow-hidden border border-border shrink-0">
+                                        {% if cinema.image %}
+                                            <img src="{{ cinema.image.url }}" alt="" class="w-full h-full object-cover">
+                                        {% else %}
+                                            <div class="w-full h-full bg-secondary flex items-center justify-center text-xs text-subtext">No Image</div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="py-3 px-4 text-white font-bold">{{ cinema.name }}</td>
+                                <td class="py-3 px-4 text-subtext">{{ cinema.location }}</td>
+                                <td class="py-3 pl-4 text-right space-x-2">
+                                    <a href="{% url 'admin-cinema-edit' cinema.id %}" class="text-primary hover:text-primaryHover text-xs font-bold">
+                                        <i class="fa-solid fa-pen-to-square mr-1"></i> Sửa
+                                    </a>
+                                    <a href="{% url 'admin-cinema-delete' cinema.id %}" onclick="return confirm('Bạn chắc chắn muốn xóa rạp này? Toàn bộ các phòng và lịch chiếu đi kèm sẽ bị xóa theo!')" class="text-danger hover:text-red-400 text-xs font-bold">
+                                        <i class="fa-solid fa-trash mr-1"></i> Xóa
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="py-12 text-center text-subtext">Chưa có dữ liệu rạp chiếu nào khớp với bộ lọc.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination UI -->
+            {% if page_obj.has_other_pages %}
+            <div class="pt-6 border-t border-border/40 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-subtext">
+                <div>
+                    Hiển thị từ {{ page_obj.start_index }} đến {{ page_obj.end_index }} trong số {{ page_obj.paginator.count }} bản ghi
+                </div>
+                <div class="flex gap-1.5 flex-wrap">
+                    {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" class="px-3 py-1.5 border border-border rounded-lg hover:bg-secondary/40 hover:text-white transition-all">Trước</a>
+                    {% else %}
+                        <button class="px-3 py-1.5 border border-border/40 rounded-lg text-subtext/40 cursor-not-allowed" disabled>Trước</button>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <span class="px-3 py-1.5 bg-primary text-background font-bold rounded-lg">{{ num }}</span>
+                        {% else %}
+                            <a href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}" class="px-3 py-1.5 border border-border rounded-lg hover:bg-secondary/40 hover:text-white transition-all">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" class="px-3 py-1.5 border border-border rounded-lg hover:bg-secondary/40 hover:text-white transition-all">Sau</a>
+                    {% else %}
+                        <button class="px-3 py-1.5 border border-border/40 rounded-lg text-subtext/40 cursor-not-allowed" disabled>Sau</button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

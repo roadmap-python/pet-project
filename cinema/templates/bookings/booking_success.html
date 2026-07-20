@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Đặt Vé Thành Công | LuxeCinema{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col items-center">
+    <!-- Success Icon & Header -->
+    <div class="text-center space-y-4 mb-10 animate-fade-in">
+        <div class="w-20 h-20 rounded-full bg-success/20 border border-success/30 flex items-center justify-center mx-auto text-success text-4xl animate-bounce">
+            <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <h1 class="text-3xl md:text-5xl font-heading font-black text-white tracking-tight">Đặt Vé Thành Công!</h1>
+        <p class="text-subtext max-w-md mx-auto text-sm md:text-base">Giao dịch đã được hoàn tất. Vui lòng xuất trình vé điện tử dưới đây tại quầy để nhận vé giấy.</p>
+    </div>
+
+    <!-- Booking Steps Progress -->
+    <div class="grid grid-cols-4 gap-2 mb-12 text-center text-xs md:text-sm font-semibold w-full max-w-2xl mx-auto">
+        <div class="pb-2 border-b-2 border-primary text-subtext">1. Chọn Rạp & Suất</div>
+        <div class="pb-2 border-b-2 border-primary text-subtext">2. Chọn Ghế Ngồi</div>
+        <div class="pb-2 border-b-2 border-primary text-subtext">3. Thanh Toán</div>
+        <div class="pb-2 border-b-2 border-primary text-primary">4. Nhận Vé</div>
+    </div>
+
+    <!-- Premium Ticket Card Component -->
+    <div class="w-full max-w-lg bg-card border border-border rounded-3xl shadow-2xl relative overflow-hidden animate-slide-up">
+        <!-- Ticket Border Cutout Left -->
+        <div class="absolute left-0 top-1/2 -translate-y-1/2 -ml-4 w-8 h-8 rounded-full bg-background border-r border-border z-20"></div>
+        <!-- Ticket Border Cutout Right -->
+        <div class="absolute right-0 top-1/2 -translate-y-1/2 -mr-4 w-8 h-8 rounded-full bg-background border-l border-border z-20"></div>
+        
+        <!-- Top Half: Movie Details -->
+        <div class="p-6 md:p-8 space-y-6">
+            <div class="flex justify-between items-start">
+                <span class="bg-primary/20 text-primary border border-primary/30 px-3 py-1 rounded text-xs font-bold uppercase tracking-wider">
+                    Vé Xem Phim VIP
+                </span>
+                <span class="text-xs text-subtext font-mono font-bold">MÃ VÉ: #{{ booking.id }}</span>
+            </div>
+
+            <div class="space-y-2">
+                <h2 class="text-2xl md:text-3xl font-heading font-bold text-white leading-tight">{{ booking.showtime.movie.title }}</h2>
+                <p class="text-sm text-primary font-semibold"><i class="fa-solid fa-location-dot mr-1"></i> {{ booking.showtime.room.cinema.name }}</p>
+                <p class="text-xs text-subtext">{{ booking.showtime.room.name }}</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6 pt-4 border-t border-border/40">
+                <div>
+                    <span class="text-xs text-subtext block uppercase tracking-wider">Ngày chiếu</span>
+                    <span class="text-base font-bold text-white">{{ booking.showtime.start_time|date:"d/m/Y" }}</span>
+                </div>
+                <div>
+                    <span class="text-xs text-subtext block uppercase tracking-wider">Suất chiếu</span>
+                    <span class="text-base font-bold text-white">{{ booking.showtime.start_time|date:"H:i" }}</span>
+                </div>
+                <div>
+                    <span class="text-xs text-subtext block uppercase tracking-wider">Ghế ngồi</span>
+                    <span class="text-lg font-black text-primary">{{ seats_str }}</span>
+                </div>
+                <div>
+                    <span class="text-xs text-subtext block uppercase tracking-wider">Tổng tiền</span>
+                    <span class="text-base font-bold text-white">{{ payment.amount|floatformat:0 }} đ</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ticket Perforated Separator Line -->
+        <div class="border-t border-dashed border-border/60 relative mx-8"></div>
+
+        <!-- Bottom Half: QR Code Verification -->
+        <div class="p-6 md:p-8 flex flex-col items-center space-y-4 bg-secondary/15">
+            <!-- QR Code Simulation -->
+            <div class="p-3 bg-white rounded-2xl shadow-lg border border-zinc-200">
+                <!-- Using a standard barcode/QR mockup with FontAwesome -->
+                <div class="w-32 h-32 flex items-center justify-center text-background">
+                    <i class="fa-solid fa-qrcode text-8xl"></i>
+                </div>
+            </div>
+            
+            <div class="text-center space-y-1">
+                <p class="text-xs text-subtext font-mono tracking-widest font-semibold uppercase">MÃ GIAO DỊCH</p>
+                <p class="text-sm text-white font-mono font-bold">{{ payment.transaction_id }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="flex flex-col sm:flex-row gap-4 mt-12 w-full max-w-md justify-center">
+        <a href="{% url 'home' %}" class="flex-1 text-center bg-secondary hover:bg-border text-white py-3 px-6 rounded-xl font-bold transition-all">
+            Về Trang Chủ
+        </a>
+        <a href="{% url 'my-bookings' %}" class="flex-1 text-center bg-primary hover:bg-primaryHover text-background py-3 px-6 rounded-xl font-bold transition-all shadow-glow">
+            Vé Của Tôi
+        </a>
+    </div>
+</div>
+{% endblock %}
