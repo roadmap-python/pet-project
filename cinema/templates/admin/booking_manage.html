@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quản Lý Vé Đã Đặt | LuxeCinema{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col lg:flex-row gap-8">
+    
+    <!-- Admin Sidebar -->
+    <aside class="w-full lg:w-64 shrink-0">
+        <div class="bg-card border border-border rounded-3xl p-6 space-y-6 shadow-glass">
+            <div class="text-xs font-bold uppercase tracking-wider text-subtext pb-2 border-b border-border/40">Bảng Quản Trị</div>
+            <nav class="flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-visible">
+                <a href="{% url 'dashboard' %}" class="hover:bg-secondary/40 text-subtext hover:text-white px-4 py-3 rounded-xl flex items-center gap-3 font-semibold text-sm shrink-0 w-auto lg:w-full transition-all">
+                    <i class="fa-solid fa-chart-line w-4 text-center"></i>
+                    Tổng Quan
+                </a>
+                <a href="{% url 'admin-bookings' %}" class="bg-primary/10 border border-primary/20 text-primary px-4 py-3 rounded-xl flex items-center gap-3 font-semibold text-sm shrink-0 w-auto lg:w-full">
+                    <i class="fa-solid fa-ticket w-4 text-center"></i>
+                    Quản Lý Đặt Vé
+                </a>
+                <a href="{% url 'movie-list' %}" class="hover:bg-secondary/40 text-subtext hover:text-white px-4 py-3 rounded-xl flex items-center gap-3 font-semibold text-sm shrink-0 w-auto lg:w-full transition-all">
+                    <i class="fa-solid fa-film w-4 text-center"></i>
+                    Website Phim
+                </a>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Admin Content Area -->
+    <div class="flex-grow space-y-8">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+                <h1 class="text-3xl font-heading font-black text-white">Lịch Sử Đặt Vé</h1>
+                <p class="text-sm text-subtext mt-1">Quản lý và tra cứu thông tin đặt vé của khách hàng</p>
+            </div>
+            <div class="relative w-full sm:w-72">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-subtext">
+                    <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                </div>
+                <input type="text" placeholder="Tìm mã đơn hoặc khách hàng..." class="w-full bg-card border border-border rounded-xl py-2.5 pl-9 pr-4 text-xs text-white placeholder-subtext focus:ring-1 focus:ring-primary focus:border-transparent transition-all">
+            </div>
+        </div>
+
+        <!-- Bookings Table -->
+        <div class="bg-card border border-border rounded-3xl p-6 shadow-glass overflow-hidden">
+            <div class="overflow-x-auto -mx-6 px-6">
+                <table class="min-w-full divide-y divide-border/40 text-sm">
+                    <thead>
+                        <tr class="text-left text-xs font-bold text-subtext uppercase tracking-wider">
+                            <th class="pb-3 pr-4">Mã Đơn</th>
+                            <th class="pb-3 px-4">Khách Hàng</th>
+                            <th class="pb-3 px-4">Phim & Suất Chiếu</th>
+                            <th class="pb-3 px-4">Ghế Đã Đặt</th>
+                            <th class="pb-3 px-4">Tổng Tiền</th>
+                            <th class="pb-3 pl-4">Trạng Thái</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border/30 text-white font-medium">
+                        {% if bookings %}
+                            {% for booking in bookings %}
+                            <tr class="hover:bg-secondary/10 transition-colors">
+                                <td class="py-4 pr-4 font-mono text-primary">#{{ booking.id }}</td>
+                                <td class="py-4 px-4">
+                                    <div class="font-bold text-white">{{ booking.user.first_name|default:booking.user.username }}</div>
+                                    <div class="text-xs text-subtext mt-0.5">{{ booking.user.email }}</div>
+                                </td>
+                                <td class="py-4 px-4">
+                                    <div class="text-white">{{ booking.showtime.movie.title }}</div>
+                                    <div class="text-xs text-subtext mt-0.5">
+                                        {{ booking.showtime.room.cinema.name }} - {{ booking.showtime.start_time|date:"H:i d/m" }}
+                                    </div>
+                                </td>
+                                <td class="py-4 px-4">
+                                    <span class="font-bold text-primary font-mono text-xs">
+                                        {% for ticket in booking.tickets.all %}
+                                            {{ ticket.seat.row }}{{ ticket.seat.number }}{% if not forloop.last %}, {% endif %}
+                                        {% endfor %}
+                                    </span>
+                                </td>
+                                <td class="py-4 px-4 font-bold">{{ booking.payment.amount|floatformat:0 }} đ</td>
+                                <td class="py-4 pl-4">
+                                    {% if booking.status == 'CONFIRMED' %}
+                                        <span class="bg-success/20 text-success border border-success/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
+                                            Đã xác nhận
+                                        </span>
+                                    {% elif booking.status == 'PENDING' %}
+                                        <span class="bg-warning/20 text-warning border border-warning/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider animate-pulse">
+                                            Đang chờ
+                                        </span>
+                                    {% else %}
+                                        <span class="bg-danger/20 text-danger border border-danger/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
+                                            Đã hủy
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="py-16 text-center text-subtext">Không tìm thấy yêu cầu đặt vé nào.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

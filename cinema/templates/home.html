@@ -1,0 +1,337 @@
+{% extends 'base.html' %} 
+{% load static %} 
+
+{% block title %}Trang Chủ | LuxeCinema - Trải Nghiệm Điện Ảnh Đỉnh Cao{% endblock %} 
+
+{% block content %}
+<!-- Immersive Hero Carousel Section -->
+<section x-data="heroCarousel()" x-init="init()"
+    class="relative w-full h-[90vh] bg-background overflow-hidden group">
+    {% if featured_movies %}
+    <div class="relative w-full h-full">
+        {% for movie in featured_movies %}
+        <!-- Slide Item -->
+        <div x-show="activeSlide === {{ forloop.counter0 }}" 
+             x-transition:enter="transition ease-out duration-1000"
+             x-transition:enter-start="opacity-0 scale-105" 
+             x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="transition ease-in duration-1000" 
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-105" 
+             class="absolute inset-0 w-full h-full" 
+             style="display: none">
+            
+            <!-- Immersive Background Image -->
+            <div class="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-40 filter blur-sm scale-105"
+                 style="background-image: url('{% if 'http' in movie.poster_url.name %}{{ movie.poster_url.name }}{% else %}{{ movie.poster_url.url }}{% endif %}')"></div>
+            
+            <!-- Cinematic Vignette Overlays -->
+            <div class="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-transparent z-10"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/20 z-10"></div>
+
+            <!-- Content Area -->
+            <div class="absolute inset-0 flex items-center z-20">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full grid grid-cols-1 lg:grid-cols-3 gap-12 items-center">
+                    
+                    <!-- Left: Movie Metadata -->
+                    <div class="lg:col-span-2 space-y-6 text-left animate-slide-up">
+                        <!-- Badges -->
+                        <div class="flex items-center gap-3">
+                            <span class="bg-primary/20 text-primary border border-primary/30 px-3.5 py-1 rounded-xl text-xs font-bold uppercase tracking-wider backdrop-blur-md">
+                                NỔI BẬT KHUYÊN XEM
+                            </span>
+                            <span class="bg-card/80 text-text border border-border px-3 py-1 rounded-xl text-xs font-bold uppercase tracking-wider backdrop-blur-md">
+                                IMAX 3D
+                            </span>
+                            <span class="bg-danger/25 text-danger border border-danger/35 px-2.5 py-1 rounded-lg text-xs font-bold">
+                                {{ movie.age_restriction|default:"C13" }}
+                            </span>
+                        </div>
+
+                        <!-- Movie Title -->
+                        <h1 class="text-5xl md:text-7xl font-heading font-black text-white tracking-tight leading-none drop-shadow-xl">
+                            {{ movie.title }}
+                        </h1>
+
+                        <!-- Movie details line -->
+                        <div class="flex items-center gap-4 text-sm font-semibold text-subtext">
+                            <span class="flex items-center gap-1.5 text-primary">
+                                <i class="fa-solid fa-star"></i> {{ movie.rating }}/10
+                            </span>
+                            <span>&bull;</span>
+                            <span>{{ movie.duration }} phút</span>
+                            <span>&bull;</span>
+                            <span>{{ movie.genres.all|join:", "|default:"Hành Động, Viễn Tưởng" }}</span>
+                        </div>
+
+                        <!-- Movie Description -->
+                        <p class="text-subtext text-base md:text-lg line-clamp-3 leading-relaxed max-w-xl">
+                            {{ movie.description }}
+                        </p>
+
+                        <!-- CTA Action buttons -->
+                        <div class="flex items-center gap-4 pt-4">
+                            <a href="{% url 'select-cinema' movie.id %}"
+                                class="bg-primary text-background px-8 py-4 rounded-xl font-bold hover:bg-primaryHover transition-all duration-300 shadow-glow flex items-center gap-3 focus:outline-none transform hover:-translate-y-0.5">
+                                <i class="fa-solid fa-ticket-simple"></i>
+                                Đặt Vé Ngay
+                            </a>
+                            <a href="{% url 'movie-detail' movie.id %}"
+                                class="bg-secondary/60 text-white border border-border px-8 py-4 rounded-xl font-bold hover:bg-secondary hover:border-white/50 transition-all duration-300 backdrop-blur-md flex items-center gap-3 focus:outline-none transform hover:-translate-y-0.5">
+                                <i class="fa-solid fa-circle-info"></i>
+                                Chi Tiết Phim
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Right: Large Poster Preview on desktop -->
+                    <div class="hidden lg:block w-72 h-[420px] rounded-3xl overflow-hidden border border-white/10 shadow-2xl relative group/poster animate-fade-in shrink-0 mx-auto">
+                        <img src="{% if 'http' in movie.poster_url.name %}{{ movie.poster_url.name }}{% else %}{{ movie.poster_url.url }}{% endif %}" 
+                             alt="{{ movie.title }}" 
+                             class="w-full h-full object-cover transform transition-transform duration-700 group-hover/poster:scale-105">
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Carousel Indicators -->
+        <div class="absolute bottom-10 right-10 flex items-center gap-3 z-30">
+            {% for movie in featured_movies %}
+            <button @click="goToSlide({{ forloop.counter0 }})"
+                :class="{'w-8 bg-primary': activeSlide === {{ forloop.counter0 }}, 'w-2 bg-border hover:bg-subtext': activeSlide !== {{ forloop.counter0 }}}"
+                class="h-2 rounded-full transition-all duration-300 focus:outline-none"
+                aria-label="Go to slide {{ forloop.counter }}"></button>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="absolute inset-0 flex items-center justify-center bg-card">
+        <div class="text-center space-y-4">
+            <i class="fa-solid fa-film text-6xl text-border"></i>
+            <h2 class="text-2xl font-heading text-subtext">Không có phim tiêu điểm nào khả dụng</h2>
+        </div>
+    </div>
+    {% endif %}
+</section>
+
+<!-- Luxury Benefits / Feature Section -->
+<section class="py-16 bg-card border-y border-border/30 relative z-25">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="flex gap-4 items-start">
+            <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 text-primary text-xl shrink-0">
+                <i class="fa-solid fa-couch"></i>
+            </div>
+            <div>
+                <h4 class="font-bold text-white text-base">Rạp Chiếu Hạng Sang</h4>
+                <p class="text-xs text-subtext mt-1">Hệ thống ghế tựa VIP Gold Class và giường nằm êm ái hàng đầu.</p>
+            </div>
+        </div>
+        <div class="flex gap-4 items-start">
+            <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 text-primary text-xl shrink-0">
+                <i class="fa-solid fa-volume-high"></i>
+            </div>
+            <div>
+                <h4 class="font-bold text-white text-base">Âm Thanh Dolby Atmos</h4>
+                <p class="text-xs text-subtext mt-1">Dải âm vòm sống động tái hiện chân thực mọi hiệu ứng phim.</p>
+            </div>
+        </div>
+        <div class="flex gap-4 items-start">
+            <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 text-primary text-xl shrink-0">
+                <i class="fa-solid fa-gift"></i>
+            </div>
+            <div>
+                <h4 class="font-bold text-white text-base">Đặc Quyền Luxe VIP</h4>
+                <p class="text-xs text-subtext mt-1">Tích lũy điểm thưởng đổi bắp nước miễn phí và vé ưu đãi.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Movies Showcase & Real-Time Filtering Section -->
+<section class="py-20 bg-background relative z-20" x-data="{ selectedGenre: 'ALL' }">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <!-- Header & Genre Tabs -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
+            <div>
+                <h2 class="text-3xl font-heading font-black text-white flex items-center gap-3">
+                    <span class="w-2.5 h-8 bg-primary rounded-full inline-block"></span> Phim Đang Chiếu
+                </h2>
+                <p class="text-subtext text-sm ml-5 mt-1">Xem lịch chiếu và chọn ghế cho các phim ăn khách nhất</p>
+            </div>
+            
+            <!-- Quick Genre Filters -->
+            <div class="flex flex-wrap gap-2">
+                <button @click="selectedGenre = 'ALL'" 
+                        :class="{'bg-primary text-background font-bold border-primary': selectedGenre === 'ALL', 'bg-card text-subtext border-border hover:border-primary/45 hover:text-white': selectedGenre !== 'ALL'}"
+                        class="px-4 py-2 text-xs rounded-xl border transition-all duration-300 font-semibold">
+                    Tất Cả Phim
+                </button>
+                <button @click="selectedGenre = 'HÀNH ĐỘNG'" 
+                        :class="{'bg-primary text-background font-bold border-primary': selectedGenre === 'HÀNH ĐỘNG', 'bg-card text-subtext border-border hover:border-primary/45 hover:text-white': selectedGenre !== 'HÀNH ĐỘNG'}"
+                        class="px-4 py-2 text-xs rounded-xl border transition-all duration-300 font-semibold">
+                    Hành Động
+                </button>
+                <button @click="selectedGenre = 'VIỄN TƯỞNG'" 
+                        :class="{'bg-primary text-background font-bold border-primary': selectedGenre === 'VIỄN TƯỞNG', 'bg-card text-subtext border-border hover:border-primary/45 hover:text-white': selectedGenre !== 'VIỄN TƯỞNG'}"
+                        class="px-4 py-2 text-xs rounded-xl border transition-all duration-300 font-semibold">
+                    Viễn Tưởng
+                </button>
+                <button @click="selectedGenre = 'HOẠT HÌNH'" 
+                        :class="{'bg-primary text-background font-bold border-primary': selectedGenre === 'HOẠT HÌNH', 'bg-card text-subtext border-border hover:border-primary/45 hover:text-white': selectedGenre !== 'HOẠT HÌNH'}"
+                        class="px-4 py-2 text-xs rounded-xl border transition-all duration-300 font-semibold">
+                    Hoạt Hình
+                </button>
+            </div>
+        </div>
+
+        <!-- Movie Grid with Alpine-based visibility toggling -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            {% if now_showing_movies %}
+                {% for movie in now_showing_movies %}
+                <!-- Filter Check Container -->
+                <div x-show="selectedGenre === 'ALL' || 
+                             (selectedGenre === 'HÀNH ĐỘNG' && '{% for g in movie.genres.all %}{{ g.name|upper }} {% endfor %}'.includes('HÀNH ĐỘNG')) || 
+                             (selectedGenre === 'VIỄN TƯỞNG' && '{% for g in movie.genres.all %}{{ g.name|upper }} {% endfor %}'.includes('VIỄN TƯỞNG')) || 
+                             (selectedGenre === 'HOẠT HÌNH' && '{% for g in movie.genres.all %}{{ g.name|upper }} {% endfor %}'.includes('HOẠT HÌNH'))"
+                     x-transition:enter="transition ease-out duration-300"
+                     x-transition:enter-start="opacity-0 scale-95"
+                     x-transition:enter-end="opacity-100 scale-100"
+                     class="w-full">
+                    {% include 'partials/movie_card.html' with movie=movie %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-span-full py-16 text-center text-subtext">Không có phim đang chiếu nào khả dụng.</div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<!-- Premium IMAX Cinema Promo Section -->
+<section class="py-20 bg-background relative z-25">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="relative rounded-3xl overflow-hidden shadow-2xl border border-white/5 group">
+            <div class="absolute inset-0 bg-cover bg-center transition-transform duration-[4000ms] group-hover:scale-105" 
+                 style="background-image: url('https://images.unsplash.com/photo-1585647347384-259e51c8651c?q=80&w=2070&auto=format&fit=crop');"></div>
+            <div class="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/85 to-transparent z-10"></div>
+
+            <div class="relative z-20 p-8 md:p-16 max-w-2xl space-y-6">
+                <span class="bg-primary/20 text-primary border border-primary/30 px-3 py-1 rounded-xl text-xs font-bold uppercase tracking-wider inline-block">
+                    TRẢI NGHIỆM ĐỈNH CAO
+                </span>
+                <h3 class="text-4xl md:text-5xl font-heading font-black text-white leading-tight">
+                    Công Nghệ Chiếu
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">IMAX</span> Tiên Tiến
+                </h3>
+                <p class="text-subtext text-base md:text-lg leading-relaxed">
+                    Màn hình cỡ lớn bao quát trọn vẹn tầm nhìn cùng độ phân giải cực cao mang đến những thước phim sắc nét gấp 10 lần hệ thống chiếu thường.
+                </p>
+                <a href="{% url 'movie-list' %}"
+                   class="inline-flex items-center gap-3 bg-white text-background px-6 py-3.5 rounded-xl font-bold hover:bg-primary transition-colors duration-300 shadow-lg">
+                    Tìm Kiếm Rạp Chiếu <i class="fa-solid fa-location-dot"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Coming Soon Section -->
+<section class="py-20 bg-background relative z-20 overflow-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-end justify-between mb-12">
+            <div>
+                <h2 class="text-3xl font-heading font-black text-white flex items-center gap-3">
+                    <span class="w-2.5 h-8 bg-accent rounded-full inline-block"></span> Phim Sắp Chiếu
+                </h2>
+                <p class="text-subtext text-sm ml-5 mt-1">Chào đón những bom tấn điện ảnh chuẩn bị đổ bộ tại rạp</p>
+            </div>
+            <a href="{% url 'movie-list' %}?status=coming_soon"
+                class="text-accent hover:text-danger text-sm font-semibold transition-colors flex items-center gap-2 group">
+                Xem Tất Cả Phim Sắp Chiếu
+                <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+            </a>
+        </div>
+
+        <!-- Movie Slider -->
+        <div class="relative group" x-data="movieSlider()">
+            <!-- Left Paddle -->
+            <button @click="scrollLeft()"
+                class="absolute left-0 top-1/2 -translate-y-1/2 -ml-4 z-10 w-12 h-12 rounded-full bg-background/80 backdrop-blur-md border border-border text-white flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-accent hover:text-white hover:border-accent transition-all duration-300 shadow-glass focus:outline-none">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+
+            <!-- Slider Track -->
+            <div x-ref="slider"
+                class="flex gap-6 overflow-x-auto scrollbar-hide pb-8 pt-2 -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth">
+                {% if coming_soon_movies %} 
+                    {% for movie in coming_soon_movies %}
+                    <div class="snap-start shrink-0 w-[240px] md:w-[280px]">
+                        {% include 'partials/movie_card.html' with movie=movie is_coming_soon=True %}
+                    </div>
+                    {% endfor %} 
+                {% else %}
+                    <div class="w-full py-16 text-center text-subtext">Đang cập nhật danh sách phim sắp chiếu.</div>
+                {% endif %}
+            </div>
+
+            <!-- Right Paddle -->
+            <button @click="scrollRight()"
+                class="absolute right-0 top-1/2 -translate-y-1/2 -mr-4 z-10 w-12 h-12 rounded-full bg-background/80 backdrop-blur-md border border-border text-white flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-accent hover:text-white hover:border-accent transition-all duration-300 shadow-glass focus:outline-none">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+</section>
+
+{% endblock %} 
+
+{% block extra_js %}
+<script>
+    document.addEventListener('alpine:init', () => {
+        // Alpine component for the Hero Carousel
+        Alpine.data('heroCarousel', () => ({
+            activeSlide: 0,
+            slideCount: {{ featured_movies|length }},
+            interval: null,
+
+            init() {
+                if(this.slideCount > 1) {
+                    this.startAutoPlay();
+                }
+            },
+
+            startAutoPlay() {
+                this.interval = setInterval(() => {
+                    this.nextSlide();
+                }, 6000);
+            },
+
+            stopAutoPlay() {
+                clearInterval(this.interval);
+            },
+
+            nextSlide() {
+                this.activeSlide = this.activeSlide === this.slideCount - 1 ? 0 : this.activeSlide + 1;
+            },
+
+            goToSlide(index) {
+                this.activeSlide = index;
+                this.stopAutoPlay();
+                this.startAutoPlay();
+            }
+        }));
+
+        // Alpine component for the Movie Sliders
+        Alpine.data('movieSlider', () => ({
+            scrollLeft() {
+                this.$refs.slider.scrollBy({ left: -300, behavior: 'smooth' });
+            },
+            scrollRight() {
+                this.$refs.slider.scrollBy({ left: 300, behavior: 'smooth' });
+            }
+        }));
+    });
+</script>
+{% endblock %}

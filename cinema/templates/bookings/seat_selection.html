@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Chọn Ghế Ngồi | {{ movie.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Custom Seat Styles */
+    .seat-checkbox {
+        position: absolute;
+        opacity: 0;
+        cursor: pointer;
+        height: 0;
+        width: 0;
+    }
+    .seat-box {
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    /* Seat colors based on states */
+    .seat-standard {
+        background-color: #27272a;
+        border: 1px solid #3f3f46;
+    }
+    .seat-standard:hover:not(.seat-booked) {
+        background-color: #3f3f46;
+        border-color: #a1a1aa;
+        transform: translateY(-2px);
+    }
+    .seat-vip {
+        background-color: #3b0764;
+        border: 1px solid #6b21a8;
+    }
+    .seat-vip:hover:not(.seat-booked) {
+        background-color: #581c87;
+        border-color: #c084fc;
+        transform: translateY(-2px);
+    }
+    .seat-selected {
+        background-color: #fbbf24 !important;
+        border-color: #f59e0b !important;
+        box-shadow: 0 0 12px rgba(251, 191, 36, 0.6);
+        color: #09090b !important;
+        transform: scale(1.08) translateY(-2px);
+    }
+    .seat-booked {
+        background-color: #ef4444/20 !important;
+        border-color: #ef4444/30 !important;
+        opacity: 0.3;
+        cursor: not-allowed;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10" 
+     x-data="{ 
+        selectedSeats: [], 
+        basePrice: {{ showtime.base_price }}, 
+        addSeat(seatId, seatLabel, isVip) {
+            let index = this.selectedSeats.findIndex(s => s.id === seatId);
+            if (index > -1) {
+                this.selectedSeats.splice(index, 1);
+            } else {
+                this.selectedSeats.push({ id: seatId, label: seatLabel, isVip: isVip });
+            }
+        },
+        getTotal() {
+            return this.selectedSeats.reduce((sum, seat) => {
+                let price = this.basePrice;
+                if (seat.isVip) {
+                    price = price * 1.2;
+                }
+                return sum + price;
+            }, 0);
+        },
+        getSeatNames() {
+            if (this.selectedSeats.length === 0) return 'Chưa chọn';
+            return this.selectedSeats.map(s => s.label).join(', ');
+        }
+     }">
+    
+    <!-- Breadcrumb -->
+    <nav class="flex mb-8 text-sm text-subtext" aria-label="Breadcrumb">
+        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+            <li class="inline-flex items-center">
+                <a href="{% url 'home' %}" class="hover:text-white transition-colors">Trang chủ</a>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <i class="fa-solid fa-chevron-right text-xs mx-2"></i>
+                    <a href="{% url 'movie-detail' movie.id %}" class="hover:text-white transition-colors">{{ movie.title }}</a>
+                </div>
+            </li>
+            <li aria-current="page">
+                <div class="flex items-center">
+                    <i class="fa-solid fa-chevron-right text-xs mx-2"></i>
+                    <span class="text-primary font-medium">Chọn Ghế Ngồi</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+
+    <!-- Booking Steps Progress -->
+    <div class="grid grid-cols-4 gap-2 mb-10 text-center text-xs md:text-sm font-semibold max-w-2xl mx-auto">
+        <div class="pb-2 border-b-2 border-primary text-subtext">1. Chọn Rạp & Suất</div>
+        <div class="pb-2 border-b-2 border-primary text-primary">2. Chọn Ghế Ngồi</div>
+        <div class="pb-2 border-b-2 border-border text-subtext">3. Thanh Toán</div>
+        <div class="pb-2 border-b-2 border-border text-subtext">4. Nhận Vé</div>
+    </div>
+
+    <!-- Error Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="max-w-4xl mx-auto mb-6 bg-danger/20 border border-danger/40 text-white px-4 py-3 rounded-2xl text-center shadow-lg">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        
+        <!-- Left & Center: Interactive Seat Map -->
+        <div class="lg:col-span-2 bg-card border border-border rounded-3xl p-6 md:p-8 flex flex-col items-center">
+            <!-- Screen Line -->
+            <div class="w-full max-w-xl mx-auto mb-16 text-center">
+                <div class="h-1.5 w-full bg-gradient-to-r from-transparent via-primary to-transparent rounded-full shadow-glow"></div>
+                <span class="text-[10px] uppercase tracking-widest text-subtext block mt-2 font-bold">MÀN HÌNH CHIẾU SÁNG</span>
+            </div>
+
+            <!-- Seat Grid -->
+            <form id="seats-form" method="POST" class="w-full overflow-x-auto pb-4 flex flex-col items-center">
+                {% csrf_token %}
+                <div class="space-y-3 min-w-[500px]">
+                    {% for row, seats in seats_by_row.items %}
+                    <div class="flex items-center gap-3 justify-center">
+                        <!-- Left Row Label -->
+                        <span class="w-6 text-center text-sm font-bold text-subtext">{{ row }}</span>
+                        
+                        <!-- Seats in Row -->
+                        <div class="flex gap-2">
+                            {% for seat in seats %}
+                            <label class="relative block select-none">
+                                <input type="checkbox" name="selected_seats" value="{{ seat.id }}" class="seat-checkbox"
+                                       {% if seat.is_booked %}disabled{% endif %}
+                                       @change="addSeat({{ seat.id }}, '{{ row }}{{ seat.number }}', {% if seat.is_vip %}true{% else %}false{% endif %})">
+                                <span class="seat-box w-7 h-7 md:w-8 md:h-8 flex items-center justify-center text-[10px] md:text-xs font-bold rounded-lg cursor-pointer text-white
+                                       {% if seat.is_booked %}seat-booked bg-red-600/30 border border-red-500/40 text-red-400{% elif seat.is_vip %}seat-vip{% else %}seat-standard{% endif %}"
+                                      :class="{'seat-selected': selectedSeats.some(s => s.id === {{ seat.id }})}">
+                                    {{ seat.number }}
+                                </span>
+                            </label>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Right Row Label -->
+                        <span class="w-6 text-center text-sm font-bold text-subtext">{{ row }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </form>
+
+            <!-- Seat Legend -->
+            <div class="flex flex-wrap justify-center gap-6 mt-12 pt-6 border-t border-border/40 w-full text-xs font-medium text-subtext">
+                <div class="flex items-center gap-2">
+                    <span class="w-5 h-5 rounded-md bg-secondary border border-border inline-block"></span>
+                    <span>Ghế Thường</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-5 h-5 rounded-md bg-purple-950 border border-purple-800 inline-block"></span>
+                    <span>Ghế VIP (+20%)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-5 h-5 rounded-md bg-primary border border-primary inline-block"></span>
+                    <span>Ghế Đang Chọn</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-5 h-5 rounded-md bg-red-600/30 border border-red-500/40 inline-block opacity-40"></span>
+                    <span>Ghế Đã Có Khách</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Ticket Info Panel -->
+        <div class="bg-card border border-border rounded-3xl p-6 md:p-8 space-y-6 shadow-glass relative">
+            <h3 class="text-xl font-heading font-bold text-white pb-3 border-b border-border/50">Thông Tin Vé</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <h4 class="text-sm font-medium text-subtext">Phim</h4>
+                    <p class="text-lg font-bold text-white">{{ movie.title }}</p>
+                </div>
+                <div>
+                    <h4 class="text-sm font-medium text-subtext">Rạp Chiếu</h4>
+                    <p class="text-base font-semibold text-white">{{ cinema.name }}</p>
+                    <p class="text-xs text-subtext">{{ room.name }}</p>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <h4 class="text-sm font-medium text-subtext">Suất Chiếu</h4>
+                        <p class="text-base font-semibold text-white">{{ showtime.start_time|date:"H:i" }}</p>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-medium text-subtext">Ngày chiếu</h4>
+                        <p class="text-base font-semibold text-white">{{ showtime.start_time|date:"d/m/Y" }}</p>
+                    </div>
+                </div>
+                
+                <div class="pt-4 border-t border-border/40 space-y-2">
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-subtext">Ghế đã chọn:</span>
+                        <span class="font-bold text-white text-right" x-text="getSeatNames()">Chưa chọn</span>
+                    </div>
+                    <div class="flex justify-between items-center text-lg">
+                        <span class="text-white font-bold">Tổng thanh toán:</span>
+                        <span class="font-black text-primary" x-text="new Intl.NumberFormat('vi-VN').format(getTotal()) + ' đ'">0 đ</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button (triggers form submit) -->
+            <button type="submit" form="seats-form" 
+                    :disabled="selectedSeats.length === 0"
+                    class="w-full bg-primary disabled:bg-secondary disabled:text-subtext disabled:shadow-none text-background font-bold py-4 rounded-2xl hover:bg-primaryHover transition-all duration-300 shadow-glow flex items-center justify-center gap-3 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background">
+                <i class="fa-solid fa-credit-card"></i>
+                Tiến Hành Thanh Toán
+            </button>
+            <p class="text-[10px] text-subtext text-center mt-2 leading-relaxed">
+                Lưu ý: Ghế đã chọn sẽ được giữ tạm thời trong vòng 10 phút để bạn hoàn tất thủ tục thanh toán.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

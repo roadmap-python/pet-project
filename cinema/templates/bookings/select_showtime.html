@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Chọn Suất Chiếu | {{ movie.title }} | {{ cinema.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10" x-data="{ activeDateIndex: 0 }">
+    <!-- Breadcrumb -->
+    <nav class="flex mb-8 text-sm text-subtext" aria-label="Breadcrumb">
+        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+            <li class="inline-flex items-center">
+                <a href="{% url 'home' %}" class="hover:text-white transition-colors">Trang chủ</a>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <i class="fa-solid fa-chevron-right text-xs mx-2"></i>
+                    <a href="{% url 'movie-detail' movie.id %}" class="hover:text-white transition-colors">{{ movie.title }}</a>
+                </div>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <i class="fa-solid fa-chevron-right text-xs mx-2"></i>
+                    <a href="{% url 'select-cinema' movie.id %}" class="hover:text-white transition-colors">Chọn Rạp</a>
+                </div>
+            </li>
+            <li aria-current="page">
+                <div class="flex items-center">
+                    <i class="fa-solid fa-chevron-right text-xs mx-2"></i>
+                    <span class="text-primary font-medium">Chọn Suất Chiếu</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+
+    <!-- Overview Banner -->
+    <div class="bg-card border border-border rounded-3xl p-6 md:p-8 mb-12 shadow-glass flex flex-col md:flex-row gap-8 items-center">
+        <!-- Poster -->
+        <div class="w-28 h-40 rounded-xl overflow-hidden border border-border shrink-0 shadow-lg">
+            {% if movie.poster_url %}
+                {% if "http" in movie.poster_url.name %}
+                    <img src="{{ movie.poster_url.name }}" alt="{{ movie.title }}" class="w-full h-full object-cover">
+                {% else %}
+                    <img src="{{ movie.poster_url.url }}" alt="{{ movie.title }}" class="w-full h-full object-cover">
+                {% endif %}
+            {% else %}
+                <div class="w-full h-full bg-secondary flex items-center justify-center">
+                    <i class="fa-solid fa-film text-3xl text-border"></i>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="flex-grow text-center md:text-left space-y-2">
+            <div class="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                <span class="bg-primary/20 text-primary border border-primary/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
+                    {{ movie.duration }} Phút
+                </span>
+                <span class="bg-secondary text-subtext border border-border px-2 py-0.5 rounded text-[10px] font-bold uppercase">
+                    {{ cinema.name }}
+                </span>
+            </div>
+            <h1 class="text-2xl md:text-4xl font-heading font-bold text-white">{{ movie.title }}</h1>
+            <p class="text-sm text-subtext leading-relaxed"><i class="fa-solid fa-location-dot text-primary mr-1"></i> {{ cinema.location }}</p>
+        </div>
+    </div>
+
+    <!-- Booking Steps Progress -->
+    <div class="grid grid-cols-4 gap-2 mb-10 text-center text-xs md:text-sm font-semibold max-w-2xl mx-auto">
+        <div class="pb-2 border-b-2 border-primary text-primary">1. Chọn Rạp & Suất</div>
+        <div class="pb-2 border-b-2 border-border text-subtext">2. Chọn Ghế Ngồi</div>
+        <div class="pb-2 border-b-2 border-border text-subtext">3. Thanh Toán</div>
+        <div class="pb-2 border-b-2 border-border text-subtext">4. Nhận Vé</div>
+    </div>
+
+    <!-- Date Selector Tabs -->
+    {% if showtime_dates %}
+        <div class="mb-10">
+            <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <i class="fa-regular fa-calendar text-primary"></i> Chọn ngày xem chiếu:
+            </h2>
+            <div class="flex overflow-x-auto gap-3 pb-3 scrollbar-hide snap-x">
+                {% for item in showtime_dates %}
+                    <button @click="activeDateIndex = {{ forloop.counter0 }}" 
+                            :class="{'bg-primary text-background border-primary shadow-glow': activeDateIndex === {{ forloop.counter0 }}, 'bg-card text-subtext border-border hover:border-primary/50 hover:text-white': activeDateIndex !== {{ forloop.counter0 }}}"
+                            class="snap-start shrink-0 flex flex-col items-center justify-center px-6 py-4 rounded-2xl border transition-all duration-300 min-w-[110px]">
+                        <span class="text-[10px] font-bold uppercase tracking-wider mb-1">{{ item.day_name }}</span>
+                        <span class="text-2xl font-bold">{{ item.date_formatted }}</span>
+                    </button>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Showtime Listings Container -->
+        <div class="space-y-6">
+            {% for item in showtime_dates %}
+                <div x-show="activeDateIndex === {{ forloop.counter0 }}" 
+                     x-transition:enter="transition ease-out duration-300"
+                     x-transition:enter-start="opacity-0 translate-y-4"
+                     x-transition:enter-end="opacity-100 translate-y-0"
+                     class="space-y-6">
+                    
+                    <div class="bg-card border border-border rounded-2xl p-6 md:p-8">
+                        <div class="flex justify-between items-center mb-6 pb-4 border-b border-border/40">
+                            <h3 class="text-xl font-bold text-white">Lịch Chiếu Phim</h3>
+                            <span class="text-sm text-subtext">Ngày {{ item.date_str }}</span>
+                        </div>
+
+                        <!-- Grid of Showtimes -->
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                            {% for showtime in item.showtimes %}
+                                <a href="{% url 'select-seats' showtime.id %}" 
+                                   class="group block p-4 bg-background border border-border rounded-2xl text-center hover:border-primary/60 hover:bg-primary/5 transition-all duration-300 hover:shadow-md transform hover:-translate-y-0.5">
+                                    <div class="text-xl font-bold text-white group-hover:text-primary transition-colors">
+                                        {{ showtime.start_time|date:"H:i" }}
+                                    </div>
+                                    <div class="text-xs text-subtext mt-1.5 group-hover:text-white transition-colors">
+                                        {{ showtime.room.name }}
+                                    </div>
+                                    <div class="text-[10px] text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full mt-3 font-semibold inline-block">
+                                        {{ showtime.base_price|floatformat:0 }}đ
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="py-16 flex flex-col items-center justify-center border border-dashed border-border rounded-3xl">
+            <div class="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-4 border border-border">
+                <i class="fa-solid fa-clock-rotate-left text-subtext text-2xl"></i>
+            </div>
+            <h3 class="text-xl font-heading font-semibold text-white mb-1">Không tìm thấy suất chiếu nào</h3>
+            <p class="text-subtext text-sm">Rạp này hiện chưa có lịch chiếu cụ thể nào cho bộ phim này.</p>
+            <a href="{% url 'select-cinema' movie.id %}" class="mt-6 bg-secondary text-white px-6 py-2.5 rounded-xl font-bold hover:bg-border transition-all">
+                Chọn rạp khác
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

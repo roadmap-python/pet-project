@@ -1,58 +1,121 @@
+{% load static %}
 <!DOCTYPE html>
-<html lang="vi" class="dark">
+<html lang="en" class="scroll-smooth dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Luxury Cinema{% endblock %}</title>
-    
-    <!-- Tailwind CSS CDN -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="theme-color" content="#09090B">
+    <meta name="description" content="Premium Cinema Booking Experience. Book tickets for the latest movies in IMAX, 4DX, and VIP theaters.">
+    <title>{% block title %}Premium Cinema{% endblock %} | Book Your Movie</title>
+
+    <!-- Google Fonts: Inter for UI, Poppins for Headings -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Tailwind CSS (Configured for Production-ready CDN rendering) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
-                    colors: {
-                        gold: { 400: '#FBBF24', 500: '#F59E0B', 600: '#D97706' },
-                        dark: { 800: '#1F2937', 900: '#111827', 950: '#030712' }
-                    },
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
+                        heading: ['Poppins', 'sans-serif'],
+                    },
+                    colors: {
+                        background: '#09090B',
+                        card: '#18181B',
+                        primary: '#FBBF24',
+                        primaryHover: '#F59E0B',
+                        secondary: '#27272A',
+                        accent: '#EF4444',
+                        text: '#FFFFFF',
+                        subtext: '#A1A1AA',
+                        success: '#22C55E',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
+                        border: '#3F3F46',
+                    },
+                    boxShadow: {
+                        'glow': '0 0 20px rgba(251, 191, 36, 0.15)',
+                        'glow-accent': '0 0 20px rgba(239, 68, 68, 0.2)',
+                        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out forwards',
+                        'slide-up': 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
                     }
                 }
             }
         }
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/animations.css' %}">
+    <link rel="stylesheet" href="{% static 'css/components.css' %}">
+
+    <!-- Alpine.js for seamless interactions (Modals, Dropdowns, Tabs) -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.12.3/dist/cdn.min.js"></script>
+
+    {% block extra_css %}{% endblock %}
 </head>
-<body class="bg-dark-950 text-gray-200 font-sans antialiased min-h-screen flex flex-col">
-    
-    <!-- Navbar -->
-    <nav class="bg-dark-900 border-b border-gray-800 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center gap-2">
-                    <span class="text-2xl font-bold tracking-wider text-white">VIP<span class="text-gold-500">CINEMA</span></span>
-                </div>
-                <div class="flex space-x-4">
-                    <a href="#" class="text-gold-400 px-3 py-2 text-sm font-medium">Phim Đang Chiếu</a>
-                    <a href="#" class="text-gray-300 hover:text-gold-400 px-3 py-2 text-sm font-medium">Rạp Phim</a>
-                    <a href="#" class="bg-gold-600 text-white px-4 py-2 rounded-md text-sm font-medium">Đăng Nhập</a>
-                </div>
+<body class="bg-background text-text font-sans antialiased selection:bg-primary selection:text-background min-h-screen flex flex-col"
+      x-data="{ isScrolled: false, pageLoading: true }"
+      @scroll.window="isScrolled = (window.pageYOffset > 20)"
+      x-init="window.onload = () => { setTimeout(() => pageLoading = false, 300) }">
+
+    <!-- Global Loading Skeleton / Page Transition overlay -->
+    <div x-show="pageLoading" 
+         x-transition:leave="transition ease-in duration-300"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 flex items-center justify-center bg-background">
+        <div class="relative w-20 h-20">
+            <div class="absolute inset-0 border-4 border-t-primary border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+            <div class="absolute inset-2 border-4 border-t-accent border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin" style="animation-direction: reverse; animation-duration: 0.8s;"></div>
+            <div class="absolute inset-0 flex items-center justify-center text-primary">
+                <i class="fa-solid fa-film text-xl"></i>
             </div>
         </div>
-    </nav>
+    </div>
 
-    <!-- Main Content -->
-    <main class="flex-grow">
+    <!-- Navigation -->
+    {% include 'partials/navbar.html' %}
+
+    <!-- Main Content Area -->
+    <main class="flex-grow pt-20 relative z-10 w-full overflow-x-hidden" id="main-content">
         {% block content %}
         {% endblock %}
     </main>
 
     <!-- Footer -->
-    <footer class="bg-dark-900 border-t border-gray-800 mt-12 py-8 text-center text-gray-500 text-sm">
-        &copy; 2026 VIP Cinema Enterprise.
-    </footer>
+    {% include 'partials/footer.html' %}
+
+    <!-- Global Toast Notifications System -->
+    {% include 'partials/toast.html' %}
+
+    <!-- Global Modals System (Login prompt, Video Player, etc.) -->
+    {% include 'partials/modal.html' %}
+
+    <!-- Core JavaScript -->
+    <script src="{% static 'js/app.js' %}"></script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

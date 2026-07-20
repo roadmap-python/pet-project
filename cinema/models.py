@@ -19,6 +19,10 @@ class Movie(models.Model):
     # Django sẽ tự động tạo một bảng trung gian (movie_genres) ở dưới Database
     genres = models.ManyToManyField(Genre, related_name="movies")
 
+    description = models.TextField(blank=True, null=True)
+    rating = models.DecimalField(max_digits=3, decimal_places=1, blank=True, null=True, help_text="Điểm đánh giá từ 0.0 đến 10.0")
+    actors = models.TextField(blank=True, null=True, help_text="Danh sách diễn viên, cách nhau bằng dấu phẩy")
+
     # upload_to='movies/posters/' sẽ tự động tạo thư mục này và lưu ảnh vào đó
     poster_url = models.ImageField(upload_to='movies/posters/', blank=True, null=True, help_text="Ảnh dọc cho phim")
     banner_url = models.ImageField(upload_to='movies/banners/', blank=True, null=True, help_text="Ảnh ngang làm background")
