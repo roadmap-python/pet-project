@@ -1,7 +1,22 @@
+from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework_simplejwt.views import TokenObtainPairView
 from django.urls import path
 from . import views
+from . import api_views
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
+    # RESTful APIs
+    path('api/auth/register/', api_views.RegisterAPIView.as_view(), name='api-register'),
+    path('api/auth/login/', TokenObtainPairView.as_view(), name='api-login'),
+    path('api/auth/refresh/', TokenRefreshView.as_view(), name='api-refresh'),
+
+    path('api/movies/', api_views.MovieListAPIView.as_view(), name='api-movie-list'),
+    path('api/movies/<int:movie_id>/', api_views.MovieDetailAPIView.as_view(), name='api-movie-detail'),
+    path('api/cinemas/', api_views.CinemaListAPIView.as_view(), name='api-cinema-list'),
+    path('api/showtimes/', api_views.ShowtimeListAPIView.as_view(), name='api-showtime-list'),
+    path('api/bookings/', api_views.BookingAPIView.as_view(), name='api-booking-list'),
+
     path('health/', views.health, name='health'),
     path('', views.index, name='home'),
 
