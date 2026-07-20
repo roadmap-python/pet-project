@@ -181,6 +181,51 @@ class CinemaListAPIView(APIView):
         } for c in cinemas]
         return Response({'cinemas': data}, status=status.HTTP_200_OK)
 
+    def post(self, request):
+        name = request.data.get('name')
+        location = request.data.get('location')
+        if not name or not location:
+            return Response({'error': 'Name and location are required.'}, status=status.HTTP_400_BAD_REQUEST)
+        cinema = Cinema.objects.create(name=name, location=location)
+        return Response({
+            'id': cinema.id,
+            'name': cinema.name,
+            'location': cinema.location
+        }, status=status.HTTP_201_CREATED)
+
+
+class CinemaDetailAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, cinema_id):
+        cinema = get_object_or_404(Cinema, id=cinema_id)
+        rooms = [{
+            'id': r.id,
+            'name': r.name
+        } for r in cinema.rooms.all()]
+        return Response({
+            'id': cinema.id,
+            'name': cinema.name,
+            'location': cinema.location,
+            'rooms': rooms
+        }, status=status.HTTP_200_OK)
+
+    def put(self, request, cinema_id):
+        cinema = get_object_or_404(Cinema, id=cinema_id)
+        cinema.name = request.data.get('name', cinema.name)
+        cinema.location = request.data.get('location', cinema.location)
+        cinema.save()
+        return Response({
+            'id': cinema.id,
+            'name': cinema.name,
+            'location': cinema.location
+        }, status=status.HTTP_200_OK)
+
+    def delete(self, request, cinema_id):
+        cinema = get_object_or_404(Cinema, id=cinema_id)
+        cinema.delete()
+        return Response({'message': 'Cinema deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
+
 
 # ==========================================
 # SHOWTIME API
@@ -201,6 +246,112 @@ class ShowtimeListAPIView(APIView):
             'base_price': float(s.base_price)
         } for s in showtimes]
         return Response({'showtimes': data}, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        movie_id = request.data.get('movie_id')
+        room_id = request.data.get('room_id')
+        start_time_str = request.data.get('start_time')
+        end_time_str = request.data.get('end_time')
+        base_price = request.data.get('base_price')
+
+        if not movie_id or not room_id or not start_time_str or not end_time_str or not base_price:
+            return Response({'error': 'All fields are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        movie = get_object_or_404(Movie, id=movie_id)
+        room = get_object_or_404(Room, id=room_id)
+        
+        showtime = Showtime.objects.create(
+            movie=movie,
+            room=room,
+            start_time=timezone.datetime.fromisoformat(start_time_str),
+            end_time=timezone.datetime.fromisoformat(end_time_str),
+            base_price=Decimal(str(base_price))
+        )
+        return Response({
+            'id': showtime.id,
+            'movie': showtime.movie.title,
+            'room': showtime.room.name,
+            'start_time': showtime.start_time.isoformat(),
+            'end_time': showtime.end_time.isoformat(),
+            'base_price': float(showtime.base_price)
+        }, status=status.HTTP_201_CREATED)
+
+
+class ShowtimeDetailAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, showtime_id):
+        showtime = get_object_or_404(Showtime, id=showtime_id)
+        return Response({
+            'id': showtime.id,
+            'movie': showtime.movie.title,
+            'room': showtime.room.name,
+            'cinema': showtime.room.cinema.name,
+            'start_time': showtime.start_time.isoformat(),
+            'end_time': showtime.end_time.isoformat(),
+            'base_price': float(showtime.base_price)
+        }, status=status.HTTP_200_OK)
+
+    def put(self, request, showtime_id):
+        showtime = get_object_or_404(Showtime, id=showtime_id)
+        if request.data.get('movie_id'):
+            showtime.movie = get_object_or_404(Movie, id=request.data.get('movie_id'))
+        if request.data.get('room_id'):
+            showtime.room = get_object_or_404(Room, id=request.data.get('room_id'))
+        if request.data.get('start_time'):
+            showtime.start_time = timezone.datetime.fromisoformat(request.data.get('start_time'))
+        if request.data.get('end_time'):
+            showtime.end_time = timezone.datetime.fromisoformat(request.data.get('end_time'))
+        if request.data.get('base_price'):
+            showtime.base_price = Decimal(str(request.data.get('base_price')))
+        showtime.save()
+        return Response({
+            'id': showtime.id,
+            'movie': showtime.movie.title,
+            'start_time': showtime.start_time.isoformat(),
+            'base_price': float(showtime.base_price)
+        }, status=status.HTTP_200_OK)
+
+    def delete(self, request, showtime_id):
+        showtime = get_object_or_404(Showtime, id=showtime_id)
+        showtime.delete()
+        return Response({'message': 'Showtime deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
+
+
+# Query Seat Map for specific showtime
+class ShowtimeSeatsAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, showtime_id):
+        showtime = get_object_or_404(Showtime, id=showtime_id)
+        room = showtime.room
+        all_seats = Seat.objects.filter(room=room).order_by('row', 'number')
+        
+        booked_tickets = Ticket.objects.filter(
+            booking__showtime=showtime,
+            booking__status__in=['CONFIRMED', 'PENDING']
+        )
+        booked_seat_ids = set(ticket.seat_id for ticket in booked_tickets)
+        
+        seats_data = []
+        for seat in all_seats:
+            is_vip = seat.row in ['E', 'F', 'G']
+            price = showtime.base_price * Decimal('1.20') if is_vip else showtime.base_price
+            seats_data.append({
+                'id': seat.id,
+                'row': seat.row,
+                'number': seat.number,
+                'type': 'VIP' if is_vip else 'STANDARD',
+                'price': float(price),
+                'is_booked': seat.id in booked_seat_ids
+            })
+            
+        return Response({
+            'showtime_id': showtime.id,
+            'room': room.name,
+            'cinema': room.cinema.name,
+            'seats': seats_data
+        }, status=status.HTTP_200_OK)
 
 
 # ==========================================
@@ -260,5 +411,40 @@ class BookingAPIView(APIView):
                 )
                 
             return Response(serialize_booking(booking), status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class BookingDetailAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, booking_id):
+        booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+        return Response(serialize_booking(booking), status=status.HTTP_200_OK)
+
+
+class BookingPayAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, booking_id):
+        booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+        if booking.status != 'PENDING':
+            return Response({'error': 'Chỉ có thể thanh toán các đơn hàng đang chờ (PENDING).'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            payment_obj = get_object_or_404(Payment, booking=booking)
+            with transaction.atomic():
+                booking.status = 'CONFIRMED'
+                booking.save()
+                
+                payment_obj.is_successful = True
+                payment_obj.transaction_id = f"LUXE-{booking.id}-{int(timezone.now().timestamp())}"
+                payment_obj.paid_at = timezone.now()
+                payment_obj.save()
+                
+            return Response({
+                'message': 'Thanh toán thành công!',
+                'booking': serialize_booking(booking)
+            }, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
