@@ -46,6 +46,7 @@ urlpatterns = [
     path('booking/success/<int:booking_id>/', views.booking_success, name='booking-success'),
     
     path('my-bookings/', views.my_bookings, name='my-bookings'),
+    path('profile/', views.user_profile, name='profile'),
 
     # Admin page
     path('manage/dashboard/', views.admin_dashboard_ui, name='dashboard'),

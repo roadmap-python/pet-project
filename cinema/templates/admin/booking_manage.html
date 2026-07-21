@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load humanize %}
 
 {% block title %}Quản Lý Vé Đã Đặt | LuxeCinema{% endblock %}
 
@@ -116,7 +117,7 @@
                                         {% endfor %}
                                     </span>
                                 </td>
-                                <td class="py-4 px-4 font-bold">{{ booking.payment.amount|floatformat:0 }} đ</td>
+                                <td class="py-4 px-4 font-bold">{{ booking.payment.amount|floatformat:0|intcomma }} đ</td>
                                 <td class="py-4 pl-4">
                                     {% if booking.status == 'CONFIRMED' %}
                                         <span class="bg-success/20 text-success border border-success/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">

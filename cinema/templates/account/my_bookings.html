@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load humanize %}
 
 {% block title %}Vé Của Tôi | LuxeCinema{% endblock %}
 
@@ -10,7 +11,8 @@
             <h1 class="text-3xl font-heading font-black text-white">Vé Của Tôi</h1>
             <p class="text-sm text-subtext mt-1">Lịch sử đặt vé xem phim của bạn trên LuxeCinema</p>
         </div>
-        <a href="{% url 'home' %}" class="bg-secondary hover:bg-border text-white text-sm px-4 py-2 rounded-xl font-bold transition-all">
+        <a href="{% url 'home' %}"
+            class="bg-secondary hover:bg-border text-white text-sm px-4 py-2 rounded-xl font-bold transition-all">
             Đặt vé mới
         </a>
     </div>
@@ -18,82 +20,93 @@
     <!-- Booking Lists -->
     <div class="space-y-6">
         {% if bookings %}
-            {% for booking in bookings %}
-            <div class="bg-card border border-border/80 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-md hover:border-primary/30 transition-all duration-300">
-                <div class="space-y-3 flex-grow">
-                    <div class="flex items-center gap-3">
-                        <span class="text-xs text-subtext font-mono">MÃ ĐƠN: #{{ booking.id }}</span>
-                        <span>&bull;</span>
-                        <span class="text-xs text-subtext">{{ booking.created_at|date:"d/m/Y H:i" }}</span>
-                        <span>&bull;</span>
-                        {% if booking.status == 'CONFIRMED' %}
-                            <span class="bg-success/20 text-success border border-success/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
-                                Đã Xác Nhận
-                            </span>
-                        {% elif booking.status == 'PENDING' %}
-                            <span class="bg-warning/20 text-warning border border-warning/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider animate-pulse">
-                                Chờ Thanh Toán
-                            </span>
-                        {% else %}
-                            <span class="bg-danger/20 text-danger border border-danger/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
-                                Đã Hủy
-                            </span>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="space-y-1">
-                        <h2 class="text-xl md:text-2xl font-heading font-bold text-white leading-tight">
-                            {{ booking.showtime.movie.title }}
-                        </h2>
-                        <p class="text-sm text-primary font-semibold">
-                            <i class="fa-solid fa-location-dot mr-1"></i> {{ booking.showtime.room.cinema.name }} - {{ booking.showtime.room.name }}
-                        </p>
-                    </div>
-
-                    <div class="flex flex-wrap gap-x-6 gap-y-2 pt-2 text-xs font-semibold text-subtext">
-                        <div>
-                            <span class="font-normal block text-[10px] uppercase">Thời Gian</span>
-                            <span class="text-white">{{ booking.showtime.start_time|date:"H:i" }} - {{ booking.showtime.start_time|date:"d/m/Y" }}</span>
-                        </div>
-                        <div>
-                            <span class="font-normal block text-[10px] uppercase">Ghế ngồi</span>
-                            <span class="text-white">
-                                {% for ticket in booking.tickets.all %}
-                                    {{ ticket.seat.row }}{{ ticket.seat.number }}{% if not forloop.last %}, {% endif %}
-                                {% endfor %}
-                            </span>
-                        </div>
-                        <div>
-                            <span class="font-normal block text-[10px] uppercase">Thanh toán</span>
-                            <span class="text-white">{{ booking.payment.amount|floatformat:0 }}đ</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="shrink-0 w-full md:w-auto flex justify-end items-center border-t md:border-t-0 border-border/40 pt-4 md:pt-0">
+        {% for booking in bookings %}
+        <div
+            class="bg-card border border-border/80 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-md hover:border-primary/30 transition-all duration-300">
+            <div class="space-y-3 flex-grow">
+                <div class="flex items-center gap-3">
+                    <span class="text-xs text-subtext font-mono">MÃ ĐƠN: #{{ booking.id }}</span>
+                    <span>&bull;</span>
+                    <span class="text-xs text-subtext">{{ booking.created_at|date:"d/m/Y H:i" }}</span>
+                    <span>&bull;</span>
                     {% if booking.status == 'CONFIRMED' %}
-                        <a href="{% url 'booking-success' booking.id %}" class="w-full md:w-auto bg-secondary hover:bg-primary hover:text-background text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 text-center">
-                            Xem Vé Điện Tử
-                        </a>
+                    <span
+                        class="bg-success/20 text-success border border-success/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
+                        Đã Xác Nhận
+                    </span>
                     {% elif booking.status == 'PENDING' %}
-                        <a href="{% url 'payment' booking.id %}" class="w-full md:w-auto bg-primary hover:bg-primaryHover text-background px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 text-center shadow-glow">
-                            Thanh Toán Ngay
-                        </a>
+                    <span
+                        class="bg-warning/20 text-warning border border-warning/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider animate-pulse">
+                        Chờ Thanh Toán
+                    </span>
+                    {% else %}
+                    <span
+                        class="bg-danger/20 text-danger border border-danger/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
+                        Đã Hủy
+                    </span>
                     {% endif %}
                 </div>
-            </div>
-            {% endfor %}
-        {% else %}
-            <div class="py-20 flex flex-col items-center justify-center border border-dashed border-border rounded-3xl bg-card">
-                <div class="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-4 border border-border">
-                    <i class="fa-solid fa-ticket-simple text-subtext text-2xl"></i>
+
+                <div class="space-y-1">
+                    <h2 class="text-xl md:text-2xl font-heading font-bold text-white leading-tight">
+                        {{ booking.showtime.movie.title }}
+                    </h2>
+                    <p class="text-sm text-primary font-semibold">
+                        <i class="fa-solid fa-location-dot mr-1"></i> {{ booking.showtime.room.cinema.name }} -
+                        {{ booking.showtime.room.name }}
+                    </p>
                 </div>
-                <h3 class="text-xl font-heading font-semibold text-white mb-1">Chưa có lịch sử đặt vé</h3>
-                <p class="text-subtext text-sm">Hãy khám phá các phim mới nhất và đặt vé xem phim ngay.</p>
-                <a href="{% url 'home' %}" class="mt-6 bg-primary text-background px-6 py-2.5 rounded-xl font-bold hover:bg-primaryHover transition-all">
-                    Khám phá phim ngay
-                </a>
+
+                <div class="flex flex-wrap gap-x-6 gap-y-2 pt-2 text-xs font-semibold text-subtext">
+                    <div>
+                        <span class="font-normal block text-[10px] uppercase">Thời Gian</span>
+                        <span class="text-white">{{ booking.showtime.start_time|date:"H:i" }} -
+                            {{ booking.showtime.start_time|date:"d/m/Y" }}</span>
+                    </div>
+                    <div>
+                        <span class="font-normal block text-[10px] uppercase">Ghế ngồi</span>
+                        <span class="text-white">
+                            {% for ticket in booking.tickets.all %}
+                            {{ ticket.seat.row }}{{ ticket.seat.number }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        </span>
+                    </div>
+                    <div>
+                        <span class="font-normal block text-[10px] uppercase">Thanh toán</span>
+                        <span class="text-white">{{ booking.payment.amount|floatformat:0|intcomma|intcomma }}đ</span>
+                    </div>
+                </div>
             </div>
+
+            <div
+                class="shrink-0 w-full md:w-auto flex justify-end items-center border-t md:border-t-0 border-border/40 pt-4 md:pt-0">
+                {% if booking.status == 'CONFIRMED' %}
+                <a href="{% url 'booking-success' booking.id %}"
+                    class="w-full md:w-auto bg-secondary hover:bg-primary hover:text-background text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 text-center">
+                    Xem Vé Điện Tử
+                </a>
+                {% elif booking.status == 'PENDING' %}
+                <a href="{% url 'payment' booking.id %}"
+                    class="w-full md:w-auto bg-primary hover:bg-primaryHover text-background px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 text-center shadow-glow">
+                    Thanh Toán Ngay
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div
+            class="py-20 flex flex-col items-center justify-center border border-dashed border-border rounded-3xl bg-card">
+            <div class="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-4 border border-border">
+                <i class="fa-solid fa-ticket-simple text-subtext text-2xl"></i>
+            </div>
+            <h3 class="text-xl font-heading font-semibold text-white mb-1">Chưa có lịch sử đặt vé</h3>
+            <p class="text-subtext text-sm">Hãy khám phá các phim mới nhất và đặt vé xem phim ngay.</p>
+            <a href="{% url 'home' %}"
+                class="mt-6 bg-primary text-background px-6 py-2.5 rounded-xl font-bold hover:bg-primaryHover transition-all">
+                Khám phá phim ngay
+            </a>
+        </div>
         {% endif %}
     </div>
 </div>

@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
-
+{% load humanize %}
 {% block title %}Đặt Vé Thành Công | LuxeCinema{% endblock %}
 
 {% block content %}
@@ -59,7 +59,7 @@
                 </div>
                 <div>
                     <span class="text-xs text-subtext block uppercase tracking-wider">Tổng tiền</span>
-                    <span class="text-base font-bold text-white">{{ payment.amount|floatformat:0 }} đ</span>
+                    <span class="text-base font-bold text-white">{{ payment.amount|floatformat:0|intcomma }} đ</span>
                 </div>
             </div>
         </div>

@@ -88,11 +88,11 @@
                                 </a>
                                 {% endif %}
                                 
-                                <a href="#" class="block px-4 py-2 text-sm text-subtext hover:text-white hover:bg-secondary/50 transition-colors duration-150 flex items-center gap-3">
-                                    <i class="fa-regular fa-id-badge w-4 text-center"></i> My Profile
+                                <a href="{% url 'profile' %}" class="block px-4 py-2 text-sm text-subtext hover:text-white hover:bg-secondary/50 transition-colors duration-150 flex items-center gap-3">
+                                    <i class="fa-regular fa-id-badge w-4 text-center"></i> Hồ Sơ Của Tôi
                                 </a>
-                                <a href="#" class="block px-4 py-2 text-sm text-subtext hover:text-white hover:bg-secondary/50 transition-colors duration-150 flex items-center gap-3">
-                                    <i class="fa-solid fa-ticket w-4 text-center"></i> My Tickets
+                                <a href="{% url 'my-bookings' %}" class="block px-4 py-2 text-sm text-subtext hover:text-white hover:bg-secondary/50 transition-colors duration-150 flex items-center gap-3">
+                                    <i class="fa-solid fa-ticket w-4 text-center"></i> Vé Của Tôi
                                 </a>
                                 
                                 <div class="h-px bg-border/50 my-1"></div>

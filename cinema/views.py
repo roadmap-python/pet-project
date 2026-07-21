@@ -342,6 +342,29 @@ def my_bookings(request):
         'bookings': bookings
     })
 
+# Trang hồ sơ cá nhân
+@login_required(login_url='login')
+def user_profile(request):
+    user = request.user
+    if request.method == 'POST':
+        full_name = request.POST.get('full_name', '').strip()
+        email = request.POST.get('email', '').strip()
+        
+        if full_name:
+            user.first_name = full_name
+        if email and email != user.email:
+            if User.objects.filter(email=email).exclude(id=user.id).exists():
+                messages.error(request, "Email này đã được sử dụng bởi tài khoản khác.")
+                return redirect('profile')
+            user.email = email
+            user.username = email
+        
+        user.save()
+        messages.success(request, "Cập nhật thông tin cá nhân thành công!")
+        return redirect('profile')
+        
+    return render(request, 'account/profile.html', {'user': user})
+
 @staff_member_required(login_url='login')
 def admin_dashboard_ui(request):
     from django.db.models import Sum

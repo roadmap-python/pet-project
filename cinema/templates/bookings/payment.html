@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load humanize %}
 
 {% block title %}Thanh Toán Vé | {{ booking.showtime.movie.title }}{% endblock %}
 
@@ -149,7 +150,7 @@
                 
                 <div class="pt-4 border-t border-border/40 flex justify-between items-center text-base">
                     <span class="text-white font-bold">Tổng tiền:</span>
-                    <span class="text-2xl font-black text-primary">{{ payment.amount|floatformat:0 }} đ</span>
+                    <span class="text-2xl font-black text-primary">{{ payment.amount|floatformat:0|intcomma }} đ</span>
                 </div>
             </div>
 

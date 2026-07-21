@@ -121,142 +121,85 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
             
-            <!-- Left Column: Showtimes (Spans 2 columns) -->
-            <div class="lg:col-span-2 space-y-10" x-data="{ activeDate: 0 }">
+            <!-- Left Column: Booking Flow & Movie Highlights (Spans 2 columns) -->
+            <div class="lg:col-span-2 space-y-10">
                 
-                <div>
-                    <h2 class="text-3xl font-heading font-bold text-white mb-6 flex items-center gap-3">
-                        <span class="w-2 h-8 bg-primary rounded-full inline-block"></span> 
-                        Showtimes & Tickets
-                    </h2>
-                    
-                    <!-- Date Selector Tabs -->
-                    <div class="flex overflow-x-auto gap-3 pb-4 scrollbar-hide snap-x">
-                        <!-- Simulated Dates -->
-                        <button @click="activeDate = 0" 
-                                :class="{'bg-primary text-background border-primary': activeDate === 0, 'bg-card text-subtext border-border hover:border-primary/50 hover:text-white': activeDate !== 0}"
-                                class="snap-start shrink-0 flex flex-col items-center justify-center px-6 py-3 rounded-xl border transition-all duration-300 min-w-[100px]">
-                            <span class="text-xs font-semibold uppercase mb-1">Today</span>
-                            <span class="text-xl font-bold">18</span>
-                            <span class="text-xs font-medium">Jul</span>
-                        </button>
-                        <button @click="activeDate = 1" 
-                                :class="{'bg-primary text-background border-primary': activeDate === 1, 'bg-card text-subtext border-border hover:border-primary/50 hover:text-white': activeDate !== 1}"
-                                class="snap-start shrink-0 flex flex-col items-center justify-center px-6 py-3 rounded-xl border transition-all duration-300 min-w-[100px]">
-                            <span class="text-xs font-semibold uppercase mb-1">Sun</span>
-                            <span class="text-xl font-bold">19</span>
-                            <span class="text-xs font-medium">Jul</span>
-                        </button>
-                        <button @click="activeDate = 2" 
-                                :class="{'bg-primary text-background border-primary': activeDate === 2, 'bg-card text-subtext border-border hover:border-primary/50 hover:text-white': activeDate !== 2}"
-                                class="snap-start shrink-0 flex flex-col items-center justify-center px-6 py-3 rounded-xl border transition-all duration-300 min-w-[100px]">
-                            <span class="text-xs font-semibold uppercase mb-1">Mon</span>
-                            <span class="text-xl font-bold">20</span>
-                            <span class="text-xs font-medium">Jul</span>
-                        </button>
+                <!-- Booking Callout Card -->
+                <div class="bg-gradient-to-r from-card to-secondary/30 border border-border rounded-3xl p-8 shadow-glass space-y-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-6">
+                        <div>
+                            <span class="text-xs text-primary font-bold uppercase tracking-wider">Hướng Dẫn Mua Vé</span>
+                            <h2 class="text-2xl font-heading font-bold text-white mt-1">Sẵn Sàng Thưởng Thức Bộ Phim?</h2>
+                        </div>
+                        <a href="{% url 'select-cinema' movie.id %}" class="bg-primary text-background font-bold px-6 py-3.5 rounded-2xl hover:bg-primaryHover transition-all text-sm shadow-glow flex items-center gap-2 shrink-0">
+                            <i class="fa-solid fa-ticket"></i> Đặt Vé Ngay
+                        </a>
+                    </div>
+
+                    <!-- 3-Step Booking Process Indicator -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2">
+                        <div class="flex items-center gap-4 p-4 rounded-2xl bg-background/50 border border-border/60">
+                            <div class="w-10 h-10 rounded-xl bg-primary/20 text-primary border border-primary/30 flex items-center justify-center font-black text-sm shrink-0">
+                                1
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-white">Chọn Rạp Chiếu</h4>
+                                <p class="text-xs text-subtext mt-0.5">Tìm rạp gần bạn nhất</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-4 p-4 rounded-2xl bg-background/50 border border-border/60">
+                            <div class="w-10 h-10 rounded-xl bg-primary/20 text-primary border border-primary/30 flex items-center justify-center font-black text-sm shrink-0">
+                                2
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-white">Chọn Khung Giờ</h4>
+                                <p class="text-xs text-subtext mt-0.5">Chọn suất chiếu phù hợp</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-4 p-4 rounded-2xl bg-background/50 border border-border/60">
+                            <div class="w-10 h-10 rounded-xl bg-primary/20 text-primary border border-primary/30 flex items-center justify-center font-black text-sm shrink-0">
+                                3
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-white">Chọn Ghế & Vé</h4>
+                                <p class="text-xs text-subtext mt-0.5">Xác nhận & thanh toán</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Cinema Listings for Selected Date -->
-                <div class="space-y-6">
+                <!-- Movie Highlights / Formats Offered -->
+                <div class="bg-card border border-border rounded-3xl p-8 space-y-6">
+                    <h3 class="text-xl font-heading font-bold text-white flex items-center gap-3">
+                        <span class="w-2 h-6 bg-primary rounded-full inline-block"></span>
+                        Định Dạng & Trải Nghiệm Rạp Chiếu
+                    </h3>
                     
-                    <!-- Cinema Block 1 -->
-                    <div class="bg-card border border-border rounded-2xl p-6 transition-all duration-300 hover:border-border/80">
-                        <div class="flex items-start justify-between mb-6 border-b border-border/50 pb-4">
-                            <div class="flex items-start gap-4">
-                                <div class="w-12 h-12 rounded-full bg-secondary flex items-center justify-center shrink-0 border border-border">
-                                    <i class="fa-solid fa-location-dot text-primary text-xl"></i>
-                                </div>
-                                <div>
-                                    <h3 class="text-xl font-heading font-bold text-white">LuxeCinema Landmark 81</h3>
-                                    <p class="text-sm text-subtext mt-1 flex items-center gap-2">
-                                        Vincom Center, Binh Thanh Dist. <a href="#" class="text-primary hover:underline text-xs">View Map</a>
-                                    </p>
-                                </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-5 rounded-2xl bg-background border border-border flex items-start gap-4">
+                            <div class="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center border border-border text-primary shrink-0">
+                                <i class="fa-solid fa-expand text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-white">Phòng Chiếu IMAX Premium</h4>
+                                <p class="text-xs text-subtext mt-1">Màn hình siêu rộng và hệ thống âm thanh vòm sống động chân thực.</p>
                             </div>
                         </div>
 
-                        <!-- Formats & Times -->
-                        <div class="space-y-5">
-                            <div>
-                                <h4 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                                    <span class="px-2 py-0.5 rounded bg-secondary border border-border text-xs">IMAX 2D</span>
-                                    <span class="text-subtext font-normal text-xs">English with Subtitles</span>
-                                </h4>
-                                <div class="flex flex-wrap gap-3">
-                                    <a href="/seat-selection" class="px-5 py-2.5 rounded-lg border border-border bg-background text-white font-medium hover:bg-primary hover:text-background hover:border-primary transition-all duration-300 text-sm focus:ring-2 focus:ring-primary focus:outline-none">
-                                        10:30
-                                    </a>
-                                    <a href="/seat-selection" class="px-5 py-2.5 rounded-lg border border-border bg-background text-white font-medium hover:bg-primary hover:text-background hover:border-primary transition-all duration-300 text-sm focus:ring-2 focus:ring-primary focus:outline-none">
-                                        14:15
-                                    </a>
-                                    <!-- Almost Full State -->
-                                    <a href="/seat-selection" class="relative px-5 py-2.5 rounded-lg border border-warning bg-background text-white font-medium hover:bg-warning hover:text-background transition-all duration-300 text-sm focus:ring-2 focus:ring-warning focus:outline-none overflow-hidden group">
-                                        <span class="relative z-10">18:00</span>
-                                        <span class="absolute bottom-0 inset-x-0 h-1 bg-warning"></span>
-                                        <div class="absolute -top-2 -right-2 w-4 h-4 bg-warning rounded-full animate-pulse-slow"></div>
-                                    </a>
-                                    <a href="/seat-selection" class="px-5 py-2.5 rounded-lg border border-border bg-background text-white font-medium hover:bg-primary hover:text-background hover:border-primary transition-all duration-300 text-sm focus:ring-2 focus:ring-primary focus:outline-none">
-                                        21:45
-                                    </a>
-                                </div>
+                        <div class="p-5 rounded-2xl bg-background border border-border flex items-start gap-4">
+                            <div class="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center border border-border text-amber-400 shrink-0">
+                                <i class="fa-solid fa-couch text-xl"></i>
                             </div>
-                            
                             <div>
-                                <h4 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                                    <span class="px-2 py-0.5 rounded bg-secondary border border-border text-xs">Standard 2D</span>
-                                    <span class="text-subtext font-normal text-xs">English with Subtitles</span>
-                                </h4>
-                                <div class="flex flex-wrap gap-3">
-                                    <a href="/seat-selection" class="px-5 py-2.5 rounded-lg border border-border bg-background text-white font-medium hover:bg-primary hover:text-background hover:border-primary transition-all duration-300 text-sm focus:ring-2 focus:ring-primary focus:outline-none">
-                                        11:00
-                                    </a>
-                                    <a href="/seat-selection" class="px-5 py-2.5 rounded-lg border border-border bg-background text-white font-medium hover:bg-primary hover:text-background hover:border-primary transition-all duration-300 text-sm focus:ring-2 focus:ring-primary focus:outline-none">
-                                        15:30
-                                    </a>
-                                </div>
+                                <h4 class="text-sm font-bold text-white">Ghế VIP Êm Ái</h4>
+                                <p class="text-xs text-subtext mt-1">Hàng ghế VIP góc nhìn trung tâm tối ưu cảm giác điện ảnh đỉnh cao.</p>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Cinema Block 2 -->
-                    <div class="bg-card border border-border rounded-2xl p-6 transition-all duration-300 hover:border-border/80">
-                        <div class="flex items-start justify-between mb-6 border-b border-border/50 pb-4">
-                            <div class="flex items-start gap-4">
-                                <div class="w-12 h-12 rounded-full bg-secondary flex items-center justify-center shrink-0 border border-border">
-                                    <i class="fa-solid fa-location-dot text-primary text-xl"></i>
-                                </div>
-                                <div>
-                                    <h3 class="text-xl font-heading font-bold text-white">LuxeCinema Aeon Mall</h3>
-                                    <p class="text-sm text-subtext mt-1 flex items-center gap-2">
-                                        Aeon Mall, Tan Phu Dist. <a href="#" class="text-primary hover:underline text-xs">View Map</a>
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="space-y-5">
-                            <div>
-                                <h4 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                                    <span class="px-2 py-0.5 rounded bg-secondary border border-border text-xs">Standard 2D</span>
-                                    <span class="text-subtext font-normal text-xs">English with Subtitles</span>
-                                </h4>
-                                <div class="flex flex-wrap gap-3">
-                                    <a href="/seat-selection" class="px-5 py-2.5 rounded-lg border border-border bg-background text-white font-medium hover:bg-primary hover:text-background hover:border-primary transition-all duration-300 text-sm focus:ring-2 focus:ring-primary focus:outline-none">
-                                        12:15
-                                    </a>
-                                    <a href="/seat-selection" class="px-5 py-2.5 rounded-lg border border-border bg-background text-white font-medium hover:bg-primary hover:text-background hover:border-primary transition-all duration-300 text-sm focus:ring-2 focus:ring-primary focus:outline-none">
-                                        16:45
-                                    </a>
-                                    <a href="/seat-selection" class="px-5 py-2.5 rounded-lg border border-border bg-background text-white font-medium hover:bg-primary hover:text-background hover:border-primary transition-all duration-300 text-sm focus:ring-2 focus:ring-primary focus:outline-none">
-                                        20:00
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                 </div>
+
             </div>
 
             <!-- Right Column: Sidebar (Reviews & Recommended) -->

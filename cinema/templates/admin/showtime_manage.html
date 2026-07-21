@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
-
+{% load humanize %}
 {% block title %}Quản Lý Lịch Chiếu | LuxeCinema{% endblock %}
 
 {% block content %}
@@ -123,7 +123,7 @@
                                     <div>{{ showtime.start_time|date:"H:i" }} - {{ showtime.end_time|date:"H:i" }}</div>
                                     <div class="text-xs text-subtext mt-0.5">{{ showtime.start_time|date:"d/m/Y" }}</div>
                                 </td>
-                                <td class="py-3 px-4 font-bold text-primary">{{ showtime.base_price|floatformat:0 }} đ</td>
+                                <td class="py-3 px-4 font-bold text-primary">{{ showtime.base_price|floatformat:0|intcomma }} đ</td>
                                 <td class="py-3 pl-4 text-right space-x-2">
                                     <a href="{% url 'admin-showtime-edit' showtime.id %}" class="text-primary hover:text-primaryHover text-xs font-bold">
                                         <i class="fa-solid fa-pen-to-square mr-1"></i> Sửa
