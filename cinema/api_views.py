@@ -8,7 +8,7 @@ from decimal import Decimal
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import Genre, Movie, Cinema, Room, Seat, Showtime, Booking, Ticket, Payment
@@ -98,7 +98,10 @@ class RegisterAPIView(APIView):
 # MOVIE API
 # ==========================================
 class MovieListAPIView(APIView):
-    permission_classes = [AllowAny]
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsAdminUser()]
 
     def get(self, request):
         movies = Movie.objects.all().order_by('-id')
@@ -135,7 +138,10 @@ class MovieListAPIView(APIView):
 
 
 class MovieDetailAPIView(APIView):
-    permission_classes = [AllowAny]
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsAdminUser()]
 
     def get(self, request, movie_id):
         movie = get_object_or_404(Movie, id=movie_id)
@@ -169,7 +175,10 @@ class MovieDetailAPIView(APIView):
 # CINEMA API
 # ==========================================
 class CinemaListAPIView(APIView):
-    permission_classes = [AllowAny]
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsAdminUser()]
 
     def get(self, request):
         cinemas = Cinema.objects.all().order_by('name')
@@ -195,7 +204,10 @@ class CinemaListAPIView(APIView):
 
 
 class CinemaDetailAPIView(APIView):
-    permission_classes = [AllowAny]
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsAdminUser()]
 
     def get(self, request, cinema_id):
         cinema = get_object_or_404(Cinema, id=cinema_id)
@@ -231,7 +243,10 @@ class CinemaDetailAPIView(APIView):
 # SHOWTIME API
 # ==========================================
 class ShowtimeListAPIView(APIView):
-    permission_classes = [AllowAny]
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsAdminUser()]
 
     def get(self, request):
         showtimes = Showtime.objects.all().order_by('start_time')
@@ -278,7 +293,10 @@ class ShowtimeListAPIView(APIView):
 
 
 class ShowtimeDetailAPIView(APIView):
-    permission_classes = [AllowAny]
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsAdminUser()]
 
     def get(self, request, showtime_id):
         showtime = get_object_or_404(Showtime, id=showtime_id)
