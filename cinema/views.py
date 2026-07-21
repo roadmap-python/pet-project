@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, Http404, JsonResponse
 from django.template import loader
 from django.utils import timezone
 from django.contrib import messages
@@ -11,7 +11,7 @@ from django.db import transaction
 from django.db.models import Count
 
 from django.db import models
-from .models import Genre, Movie, Cinema, Room, Seat, Showtime, Booking, Ticket, Payment
+from .models import Genre, Movie, Cinema, Room, Seat, Showtime, Booking, Ticket, Payment, SeatHold
 from .forms import RegisterForm, LoginForm, MovieForm, CinemaForm, ShowtimeForm
 from decimal import Decimal
 from django.core.paginator import Paginator
@@ -186,28 +186,53 @@ def select_seats(request, showtime_id):
     room = showtime.room
     cinema = room.cinema
     
+    now = timezone.now()
+    # Tự động hủy các Booking PENDING quá 10 phút và giải phóng ghế
+    cutoff = now - timezone.timedelta(minutes=10)
+    expired_pending_bookings = Booking.objects.filter(status='PENDING', created_at__lt=cutoff)
+    for b in expired_pending_bookings:
+        b.status = 'CANCELLED'
+        b.save()
+        SeatHold.objects.filter(showtime=b.showtime, user=b.user).delete()
+
+    # Tự động dọn dẹp các bản ghi giữ ghế quá 10 phút
+    SeatHold.objects.filter(showtime=showtime, expires_at__lt=now).delete()
+
     # Lấy danh sách tất cả các ghế của phòng chiếu
     all_seats = Seat.objects.filter(room=room).order_by('row', 'number')
     
-    # Lấy danh sách ghế đã được đặt cho suất chiếu này
-    # Ghế đã đặt là những ghế thuộc các Ticket của Booking có trạng thái CONFIRMED hoặc PENDING
+    # Lấy danh sách ghế đã được thanh toán chính thức (CONFIRMED)
     booked_tickets = Ticket.objects.filter(
         booking__showtime=showtime,
-        booking__status__in=['CONFIRMED', 'PENDING']
+        booking__status='CONFIRMED'
     )
     booked_seat_ids = set(ticket.seat_id for ticket in booked_tickets)
+
+    # Lấy danh sách ghế đang được giữ chỗ (< 10 phút)
+    active_holds = SeatHold.objects.filter(showtime=showtime, expires_at__gt=now)
+    held_by_others_seat_ids = set(h.seat_id for h in active_holds if h.user != request.user)
+    held_by_me_seat_ids = set(h.seat_id for h in active_holds if h.user == request.user)
     
+    # Tính thời gian giữ ghế còn lại cho người dùng hiện tại (nếu có)
+    my_holds = [h for h in active_holds if h.user == request.user]
+    if my_holds:
+        min_expires = min(h.expires_at for h in my_holds)
+        remaining_seconds = max(0, int((min_expires - now).total_seconds()))
+    else:
+        remaining_seconds = 600
+
     # Tổ chức ghế theo hàng (Row) để render bản đồ phòng chiếu
     seats_by_row = {}
     for seat in all_seats:
         if seat.row not in seats_by_row:
             seats_by_row[seat.row] = []
         
-        # Thêm thuộc tính động để kiểm tra trạng thái trong template
         seat.is_booked = seat.id in booked_seat_ids
+        seat.is_held_by_others = seat.id in held_by_others_seat_ids
+        seat.is_held_by_me = seat.id in held_by_me_seat_ids
         seat.is_vip = seat.row in ['E', 'F', 'G']  # Hàng E, F, G làm ghế VIP
         seats_by_row[seat.row].append(seat)
-        
+
     if request.method == 'POST':
         # Người dùng gửi danh sách các seat_id được chọn
         selected_seat_ids = request.POST.getlist('selected_seats')
@@ -218,15 +243,18 @@ def select_seats(request, showtime_id):
             
         try:
             with transaction.atomic():
-                # Kiểm tra lại xem có ghế nào vừa bị người khác đặt mất không
+                # Xóa đơn đặt vé PENDING cũ của người dùng này trên suất chiếu này (nếu có)
+                Booking.objects.filter(user=request.user, showtime=showtime, status='PENDING').delete()
+
+                # Kiểm tra lại xem có ghế nào đã được thanh toán CONFIRMED bởi người khác không
                 already_booked = Ticket.objects.filter(
                     booking__showtime=showtime,
-                    booking__status__in=['CONFIRMED', 'PENDING'],
+                    booking__status='CONFIRMED',
                     seat_id__in=selected_seat_ids
                 ).exists()
                 
                 if already_booked:
-                    messages.error(request, "Một hoặc nhiều ghế bạn chọn vừa được đặt bởi người khác. Vui lòng chọn lại!")
+                    messages.error(request, "Một hoặc nhiều ghế bạn chọn vừa được thanh toán bởi người khác. Vui lòng chọn lại!")
                     return redirect('select-seats', showtime_id=showtime_id)
                 
                 # Tạo một Booking mới ở trạng thái PENDING
@@ -245,7 +273,6 @@ def select_seats(request, showtime_id):
                     )
                 
                 # Tính tổng tiền và chuyển sang trang thanh toán
-                # Ghế VIP tăng 20% so với giá cơ bản
                 total_amount = 0
                 for seat_id in selected_seat_ids:
                     seat = Seat.objects.get(id=seat_id)
@@ -273,27 +300,122 @@ def select_seats(request, showtime_id):
         'cinema': cinema,
         'room': room,
         'seats_by_row': seats_by_row,
+        'remaining_seconds': remaining_seconds,
+    })
+
+
+@login_required(login_url='login')
+def toggle_seat_hold(request, showtime_id):
+    if request.method == 'POST':
+        seat_id = request.POST.get('seat_id')
+        if not seat_id:
+            return JsonResponse({'status': 'error', 'message': 'Thiếu seat_id'}, status=400)
+
+        showtime = get_object_or_404(Showtime, id=showtime_id)
+        seat = get_object_or_404(Seat, id=seat_id)
+        now = timezone.now()
+
+        # 1. Kiểm tra ghế đã thanh toán chính thức chưa
+        if Ticket.objects.filter(booking__showtime=showtime, seat=seat, booking__status='CONFIRMED').exists():
+            return JsonResponse({'status': 'error', 'message': f'Ghế {seat.row}{seat.number} đã được thanh toán!'}, status=400)
+
+        # 2. Kiểm tra xem có người khác đang giữ không
+        existing_hold = SeatHold.objects.filter(showtime=showtime, seat=seat).first()
+        if existing_hold:
+            if existing_hold.is_expired():
+                existing_hold.delete()
+                existing_hold = None
+            elif existing_hold.user != request.user:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'Ghế {seat.row}{seat.number} đang được người khác chọn (giữ chỗ 10 phút)!'
+                }, status=409)
+
+        # 3. Toggle
+        if existing_hold and existing_hold.user == request.user:
+            existing_hold.delete()
+            return JsonResponse({'status': 'released', 'seat_id': seat.id})
+        else:
+            # Đồng bộ thời gian hết hạn nếu người dùng chọn thêm ghế
+            my_existing_holds = SeatHold.objects.filter(showtime=showtime, user=request.user, expires_at__gt=now)
+            if my_existing_holds.exists():
+                expires_at = my_existing_holds.first().expires_at
+            else:
+                expires_at = now + timezone.timedelta(minutes=10)
+
+            new_hold = SeatHold.objects.create(
+                showtime=showtime,
+                seat=seat,
+                user=request.user,
+                expires_at=expires_at
+            )
+            return JsonResponse({
+                'status': 'held',
+                'seat_id': seat.id,
+                'expires_at': new_hold.expires_at.isoformat()
+            })
+    return JsonResponse({'status': 'error', 'message': 'Yêu cầu không hợp lệ'}, status=400)
+
+
+@login_required(login_url='login')
+def get_seats_status(request, showtime_id):
+    showtime = get_object_or_404(Showtime, id=showtime_id)
+    now = timezone.now()
+    
+    SeatHold.objects.filter(showtime=showtime, expires_at__lt=now).delete()
+    
+    booked_tickets = Ticket.objects.filter(
+        booking__showtime=showtime,
+        booking__status='CONFIRMED'
+    )
+    booked_seat_ids = list(set(ticket.seat_id for ticket in booked_tickets))
+    
+    active_holds = SeatHold.objects.filter(showtime=showtime, expires_at__gt=now)
+    held_by_others_ids = list(set(h.seat_id for h in active_holds if h.user != request.user))
+    held_by_me_ids = list(set(h.seat_id for h in active_holds if h.user == request.user))
+    
+    return JsonResponse({
+        'booked_seat_ids': booked_seat_ids,
+        'held_by_others_ids': held_by_others_ids,
+        'held_by_me_ids': held_by_me_ids
     })
 
 # Bước 4: Thanh toán (Yêu cầu Đăng nhập)
 @login_required(login_url='login')
 def payment(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+    now = timezone.now()
     
     if booking.status == 'CONFIRMED':
         return redirect('booking-success', booking_id=booking.id)
     elif booking.status == 'CANCELLED':
-        messages.error(request, "Đơn đặt vé này đã bị hủy!")
-        return redirect('home')
+        messages.error(request, "Đơn đặt vé này đã bị hủy do hết hạn thanh toán!")
+        return redirect('select-seats', showtime_id=booking.showtime.id)
         
+    # Kiểm tra hạn 10 phút (600s) cho đơn hàng PENDING
+    booking_age_seconds = (now - booking.created_at).total_seconds()
+    if booking.status == 'PENDING' and booking_age_seconds > 600:
+        booking.status = 'CANCELLED'
+        booking.save()
+        SeatHold.objects.filter(showtime=booking.showtime, user=booking.user).delete()
+        messages.error(request, "Đơn đặt vé đã hết hạn thanh toán (quá 10 phút). Ghế đã được hoàn lại!")
+        return redirect('select-seats', showtime_id=booking.showtime.id)
+
+    remaining_seconds = max(0, 600 - int(booking_age_seconds))
+
     payment_obj = get_object_or_404(Payment, booking=booking)
     tickets = booking.tickets.all()
     seats_str = ", ".join([f"{t.seat.row}{t.seat.number}" for t in tickets])
     
     if request.method == 'POST':
-        # Người dùng nhấn xác nhận thanh toán giả lập
-        method = request.POST.get('payment_method', 'BANK_CARD')
-        
+        # Kiểm tra lại thời gian hết hạn trước khi xử lý thanh toán
+        if (timezone.now() - booking.created_at).total_seconds() > 600:
+            booking.status = 'CANCELLED'
+            booking.save()
+            SeatHold.objects.filter(showtime=booking.showtime, user=booking.user).delete()
+            messages.error(request, "Đơn đặt vé đã hết hạn thanh toán (quá 10 phút). Ghế đã được hoàn lại!")
+            return redirect('select-seats', showtime_id=booking.showtime.id)
+
         try:
             with transaction.atomic():
                 # Cập nhật trạng thái Booking
@@ -306,6 +428,9 @@ def payment(request, booking_id):
                 payment_obj.paid_at = timezone.now()
                 payment_obj.save()
                 
+                # Xóa sạch các bản ghi giữ chỗ tạm thời (SeatHold) sau khi thanh toán thành công
+                SeatHold.objects.filter(showtime=booking.showtime, user=booking.user).delete()
+
                 messages.success(request, "Đặt vé thành công! Chúc bạn xem phim vui vẻ.")
                 return redirect('booking-success', booking_id=booking.id)
         except Exception as e:
@@ -316,6 +441,7 @@ def payment(request, booking_id):
         'payment': payment_obj,
         'tickets': tickets,
         'seats_str': seats_str,
+        'remaining_seconds': remaining_seconds,
     })
 
 

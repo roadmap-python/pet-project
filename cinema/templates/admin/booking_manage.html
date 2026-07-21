@@ -111,11 +111,13 @@
                                     </div>
                                 </td>
                                 <td class="py-4 px-4">
-                                    <span class="font-bold text-primary font-mono text-xs">
+                                    <div class="inline-block">
                                         {% for ticket in booking.tickets.all %}
-                                            {{ ticket.seat.row }}{{ ticket.seat.number }}{% if not forloop.last %}, {% endif %}
+                                            <span class="inline-block bg-primary/10 border border-primary/30 text-primary font-mono text-[11px] font-bold px-1.5 py-0.5 rounded my-0.5">
+                                                {{ ticket.seat.row }}{{ ticket.seat.number }}
+                                            </span>{% if forloop.counter|divisibleby:3 %}<br>{% endif %}
                                         {% endfor %}
-                                    </span>
+                                    </div>
                                 </td>
                                 <td class="py-4 px-4 font-bold">{{ booking.payment.amount|floatformat:0|intcomma }} đ</td>
                                 <td class="py-4 pl-4">

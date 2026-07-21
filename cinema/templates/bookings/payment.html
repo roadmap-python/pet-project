@@ -5,7 +5,27 @@
 {% block title %}Thanh Toán Vé | {{ booking.showtime.movie.title }}{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10" x-data="{ paymentMethod: 'BANK_CARD' }">
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10" 
+     x-data="{ 
+        paymentMethod: 'BANK_CARD',
+        timerSeconds: {{ remaining_seconds }},
+        init() {
+            const interval = setInterval(() => {
+                if (this.timerSeconds > 0) {
+                    this.timerSeconds--;
+                } else {
+                    clearInterval(interval);
+                    alert('Đã hết thời gian 10 phút thanh toán! Đơn đặt vé của bạn đã bị hủy.');
+                    window.location.href = '{% url "select-seats" booking.showtime.id %}';
+                }
+            }, 1000);
+        },
+        formatTimer() {
+            const mins = Math.floor(this.timerSeconds / 60).toString().padStart(2, '0');
+            const secs = (this.timerSeconds % 60).toString().padStart(2, '0');
+            return `${mins}:${secs}`;
+        }
+     }">
     <!-- Breadcrumb -->
     <nav class="flex mb-8 text-sm text-subtext" aria-label="Breadcrumb">
         <ol class="inline-flex items-center space-x-1 md:space-x-3">
@@ -35,14 +55,23 @@
         <div class="pb-2 border-b-2 border-border text-subtext">4. Nhận Vé</div>
     </div>
 
+    <!-- Timer Banner -->
+    <div class="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-center justify-between mb-6 shadow-glow">
+        <div class="flex items-center gap-2.5 text-amber-400 text-sm font-bold">
+            <i class="fa-solid fa-clock animate-pulse"></i>
+            <span>Thời gian hoàn tất thanh toán:</span>
+        </div>
+        <span class="font-mono font-black text-amber-400 text-lg" x-text="formatTimer()">10:00</span>
+    </div>
+
     <!-- Error Messages -->
-    {% if messages %}
+    <!-- {% if messages %}
         {% for message in messages %}
             <div class="bg-danger/20 border border-danger/40 text-white px-4 py-3 rounded-2xl text-center mb-6 shadow-lg">
                 {{ message }}
             </div>
         {% endfor %}
-    {% endif %}
+    {% endif %} -->
 
     <div class="grid grid-cols-1 md:grid-cols-5 gap-8 items-start">
         <!-- Billing & Payment Forms -->

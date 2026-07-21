@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 
 # ==========================================
@@ -108,5 +109,27 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"Payment for booking {self.booking.id}"
+
+
+class SeatHold(models.Model):
+    showtime = models.ForeignKey(Showtime, on_delete=models.CASCADE, related_name='holds')
+    seat = models.ForeignKey(Seat, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        unique_together = ('showtime', 'seat')
+
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    def save(self, *args, **kwargs):
+        if not self.expires_at:
+            self.expires_at = timezone.now() + timezone.timedelta(minutes=10)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Hold for seat {self.seat.row}{self.seat.number} by {self.user.username}"
 
     
