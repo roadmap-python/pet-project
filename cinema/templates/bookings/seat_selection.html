@@ -147,13 +147,35 @@
             fetch('{% url "get-seats-status" showtime.id %}')
                 .then(res => res.json())
                 .then(data => {
-                    data.held_by_others_ids.forEach(id => {
-                        const input = document.getElementById(`seat-input-${id}`);
-                        const box = document.getElementById(`seat-box-${id}`);
-                        if (input && !input.checked) {
+                    // Update all seats in real time based on active status
+                    document.querySelectorAll('.seat-checkbox').forEach(input => {
+                        const seatId = parseInt(input.value);
+                        const box = document.getElementById(`seat-box-${seatId}`);
+                        if (!box) return;
+
+                        const isBooked = data.booked_seat_ids.includes(seatId);
+                        const isHeldByOthers = data.held_by_others_ids.includes(seatId);
+                        const isHeldByMe = this.selectedSeats.some(s => s.id === seatId);
+
+                        if (isBooked) {
                             input.disabled = true;
-                            if (box) {
-                                box.className = 'seat-box w-7 h-7 md:w-8 md:h-8 flex items-center justify-center text-[10px] md:text-xs font-bold rounded-lg cursor-not-allowed bg-amber-500/30 border border-amber-500/50 text-amber-300';
+                            input.checked = false;
+                            box.className = 'seat-box w-7 h-7 md:w-8 md:h-8 flex items-center justify-center text-[10px] md:text-xs font-bold rounded-lg cursor-not-allowed seat-booked bg-red-600/30 border border-red-500/40 text-red-400';
+                        } else if (isHeldByOthers) {
+                            input.disabled = true;
+                            input.checked = false;
+                            box.className = 'seat-box w-7 h-7 md:w-8 md:h-8 flex items-center justify-center text-[10px] md:text-xs font-bold rounded-lg cursor-not-allowed bg-amber-500/30 border border-amber-500/50 text-amber-300';
+                        } else {
+                            // Empty / released seats
+                            input.disabled = false;
+                            const isVip = input.getAttribute('data-vip') === 'true';
+                            if (isHeldByMe) {
+                                input.checked = true;
+                                box.className = 'seat-box w-7 h-7 md:w-8 md:h-8 flex items-center justify-center text-[10px] md:text-xs font-bold rounded-lg cursor-pointer text-white seat-selected';
+                            } else {
+                                input.checked = false;
+                                const baseClass = 'seat-box w-7 h-7 md:w-8 md:h-8 flex items-center justify-center text-[10px] md:text-xs font-bold rounded-lg cursor-pointer text-white ';
+                                box.className = baseClass + (isVip ? 'seat-vip' : 'seat-standard');
                             }
                         }
                     });
@@ -230,6 +252,7 @@
                             {% for seat in seats %}
                             <label class="relative block select-none" title="{% if seat.is_booked %}Ghế đã bán{% elif seat.is_held_by_others %}Đang có người chọn giữ chỗ{% else %}Ghế {{ row }}{{ seat.number }}{% endif %}">
                                 <input type="checkbox" name="selected_seats" id="seat-input-{{ seat.id }}" value="{{ seat.id }}" class="seat-checkbox"
+                                       data-vip="{% if seat.is_vip %}true{% else %}false{% endif %}"
                                        {% if seat.is_booked or seat.is_held_by_others %}disabled{% endif %}
                                        {% if seat.is_held_by_me %}checked{% endif %}
                                        @change="toggleSeatHold({{ seat.id }}, '{{ row }}{{ seat.number }}', {% if seat.is_vip %}true{% else %}false{% endif %}, $event)">
