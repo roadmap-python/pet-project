@@ -71,4 +71,8 @@ urlpatterns = [
     path('manage/showtimes/create/', views.admin_showtime_create, name='admin-showtime-create'),
     path('manage/showtimes/edit/<int:showtime_id>/', views.admin_showtime_edit, name='admin-showtime-edit'),
     path('manage/showtimes/delete/<int:showtime_id>/', views.admin_showtime_delete, name='admin-showtime-delete'),
+
+    # OpenAPI & Swagger UI docs
+    path('openapi.yaml', views.openapi_yaml, name='openapi-yaml'),
+    path('api/docs/', views.swagger_ui, name='swagger-ui-docs'),
 ]

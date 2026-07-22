@@ -1,0 +1,18 @@
+# Core Web Framework
+Django==4.2.7
+
+# API Framework & Authentication
+djangorestframework==3.14.0
+djangorestframework-simplejwt==5.5.1
+
+# Environment Variables
+python-dotenv==1.2.2
+
+# Image Processing (For movie posters/banners)
+Pillow==12.2.0
+
+# Testing & Coverage Measurement
+coverage==7.15.2
+
+# OpenAPI Spec parsing support
+PyYAML==6.0.3

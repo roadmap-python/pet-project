@@ -1,0 +1,11 @@
+services:
+  web:
+    build: .
+    container_name: luxecinema_web
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
