@@ -42,6 +42,8 @@ urlpatterns = [
     path('booking/select-cinema/<int:movie_id>/', views.select_cinema, name='select-cinema'),
     path('booking/select-showtime/<int:movie_id>/<int:cinema_id>/', views.select_showtime, name='select-showtime'),
     path('booking/select-seats/<int:showtime_id>/', views.select_seats, name='select-seats'),
+    path('booking/select-seats/<int:showtime_id>/toggle-hold/', views.toggle_seat_hold, name='toggle-seat-hold'),
+    path('booking/select-seats/<int:showtime_id>/status/', views.get_seats_status, name='get-seats-status'),
     path('booking/payment/<int:booking_id>/', views.payment, name='payment'),
     path('booking/success/<int:booking_id>/', views.booking_success, name='booking-success'),
     

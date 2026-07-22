@@ -65,11 +65,13 @@
                     </div>
                     <div>
                         <span class="font-normal block text-[10px] uppercase">Ghế ngồi</span>
-                        <span class="text-white">
+                        <div class="mt-1">
                             {% for ticket in booking.tickets.all %}
-                            {{ ticket.seat.row }}{{ ticket.seat.number }}{% if not forloop.last %}, {% endif %}
+                            <span class="inline-block bg-primary/10 border border-primary/30 text-primary font-mono text-[11px] font-bold px-1.5 py-0.5 rounded my-0.5">
+                                {{ ticket.seat.row }}{{ ticket.seat.number }}
+                            </span>{% if forloop.counter|divisibleby:3 %}<br>{% endif %}
                             {% endfor %}
-                        </span>
+                        </div>
                     </div>
                     <div>
                         <span class="font-normal block text-[10px] uppercase">Thanh toán</span>

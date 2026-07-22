@@ -53,34 +53,126 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10" 
-     x-data="{ 
-        selectedSeats: [], 
-        basePrice: {{ showtime.base_price }}, 
-        addSeat(seatId, seatLabel, isVip) {
-            let index = this.selectedSeats.findIndex(s => s.id === seatId);
-            if (index > -1) {
-                this.selectedSeats.splice(index, 1);
-            } else {
-                this.selectedSeats.push({ id: seatId, label: seatLabel, isVip: isVip });
+     x-data="{
+        selectedSeats: [],
+        basePrice: {{ showtime.base_price }},
+        vipPrice: {{ showtime.base_price }} * 1.2,
+        timerSeconds: {{ remaining_seconds }},
+        timerInterval: null,
+        pollingInterval: null,
+        
+        init() {
+            {% for row, seats in seats_by_row.items %}
+                {% for seat in seats %}
+                    {% if seat.is_held_by_me %}
+                        this.selectedSeats.push({
+                            id: {{ seat.id }},
+                            name: '{{ row }}{{ seat.number }}',
+                            price: {% if seat.is_vip %}this.vipPrice{% else %}this.basePrice{% endif %}
+                        });
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+
+            if (this.selectedSeats.length > 0) {
+                this.startTimer();
             }
+
+            this.pollingInterval = setInterval(() => {
+                this.pollSeatsStatus();
+            }, 3000);
         },
-        getTotal() {
-            return this.selectedSeats.reduce((sum, seat) => {
-                let price = this.basePrice;
-                if (seat.isVip) {
-                    price = price * 1.2;
+
+        startTimer() {
+            if (this.timerInterval) return;
+            this.timerInterval = setInterval(() => {
+                if (this.timerSeconds > 0) {
+                    this.timerSeconds--;
+                } else {
+                    clearInterval(this.timerInterval);
+                    clearInterval(this.pollingInterval);
+                    alert('Hết thời gian giữ ghế 10 phút! Hệ thống sẽ tải lại trang.');
+                    window.location.reload();
                 }
-                return sum + price;
-            }, 0);
+            }, 1000);
         },
+
+        resetTimer() {
+            this.timerSeconds = 600;
+            this.startTimer();
+        },
+
+        formatTimer() {
+            const mins = Math.floor(this.timerSeconds / 60).toString().padStart(2, '0');
+            const secs = (this.timerSeconds % 60).toString().padStart(2, '0');
+            return `${mins}:${secs}`;
+        },
+
+        toggleSeatHold(seatId, seatName, isVip, event) {
+            const checkbox = event.target;
+            const price = isVip ? this.vipPrice : this.basePrice;
+
+            fetch('{% url "toggle-seat-hold" showtime.id %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: 'seat_id=' + seatId
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'error') {
+                    alert(data.message);
+                    checkbox.checked = false;
+                } else if (data.status === 'held') {
+                    this.selectedSeats.push({ id: seatId, name: seatName, price: price });
+                    this.resetTimer();
+                } else if (data.status === 'released') {
+                    this.selectedSeats = this.selectedSeats.filter(s => s.id !== seatId);
+                    if (this.selectedSeats.length === 0 && this.timerInterval) {
+                        clearInterval(this.timerInterval);
+                        this.timerInterval = null;
+                        this.timerSeconds = 600;
+                    }
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                checkbox.checked = !checkbox.checked;
+            });
+        },
+
+        pollSeatsStatus() {
+            fetch('{% url "get-seats-status" showtime.id %}')
+                .then(res => res.json())
+                .then(data => {
+                    data.held_by_others_ids.forEach(id => {
+                        const input = document.getElementById(`seat-input-${id}`);
+                        const box = document.getElementById(`seat-box-${id}`);
+                        if (input && !input.checked) {
+                            input.disabled = true;
+                            if (box) {
+                                box.className = 'seat-box w-7 h-7 md:w-8 md:h-8 flex items-center justify-center text-[10px] md:text-xs font-bold rounded-lg cursor-not-allowed bg-amber-500/30 border border-amber-500/50 text-amber-300';
+                            }
+                        }
+                    });
+                })
+                .catch(err => console.error(err));
+        },
+
+        getTotal() {
+            return this.selectedSeats.reduce((sum, s) => sum + s.price, 0);
+        },
+
         getSeatNames() {
             if (this.selectedSeats.length === 0) return 'Chưa chọn';
-            return this.selectedSeats.map(s => s.label).join(', ');
+            return this.selectedSeats.map(s => s.name).join(', ');
         }
      }">
     
     <!-- Breadcrumb -->
-    <nav class="flex mb-8 text-sm text-subtext" aria-label="Breadcrumb">
+    <nav class="flex mb-6 text-sm text-subtext" aria-label="Breadcrumb">
         <ol class="inline-flex items-center space-x-1 md:space-x-3">
             <li class="inline-flex items-center">
                 <a href="{% url 'home' %}" class="hover:text-white transition-colors">Trang chủ</a>
@@ -89,6 +181,12 @@
                 <div class="flex items-center">
                     <i class="fa-solid fa-chevron-right text-xs mx-2"></i>
                     <a href="{% url 'movie-detail' movie.id %}" class="hover:text-white transition-colors">{{ movie.title }}</a>
+                </div>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <i class="fa-solid fa-chevron-right text-xs mx-2"></i>
+                    <a href="{% url 'select-cinema' movie.id %}" class="hover:text-white transition-colors">{{ cinema.name }}</a>
                 </div>
             </li>
             <li aria-current="page">
@@ -107,15 +205,6 @@
         <div class="pb-2 border-b-2 border-border text-subtext">3. Thanh Toán</div>
         <div class="pb-2 border-b-2 border-border text-subtext">4. Nhận Vé</div>
     </div>
-
-    <!-- Error Messages -->
-    <!-- {% if messages %}
-        {% for message in messages %}
-            <div class="max-w-4xl mx-auto mb-6 bg-danger/20 border border-danger/40 text-white px-4 py-3 rounded-2xl text-center shadow-lg">
-                {{ message }}
-            </div>
-        {% endfor %}
-    {% endif %} -->
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         
@@ -139,12 +228,13 @@
                         <!-- Seats in Row -->
                         <div class="flex gap-2">
                             {% for seat in seats %}
-                            <label class="relative block select-none">
-                                <input type="checkbox" name="selected_seats" value="{{ seat.id }}" class="seat-checkbox"
-                                       {% if seat.is_booked %}disabled{% endif %}
-                                       @change="addSeat({{ seat.id }}, '{{ row }}{{ seat.number }}', {% if seat.is_vip %}true{% else %}false{% endif %})">
-                                <span class="seat-box w-7 h-7 md:w-8 md:h-8 flex items-center justify-center text-[10px] md:text-xs font-bold rounded-lg cursor-pointer text-white
-                                       {% if seat.is_booked %}seat-booked bg-red-600/30 border border-red-500/40 text-red-400{% elif seat.is_vip %}seat-vip{% else %}seat-standard{% endif %}"
+                            <label class="relative block select-none" title="{% if seat.is_booked %}Ghế đã bán{% elif seat.is_held_by_others %}Đang có người chọn giữ chỗ{% else %}Ghế {{ row }}{{ seat.number }}{% endif %}">
+                                <input type="checkbox" name="selected_seats" id="seat-input-{{ seat.id }}" value="{{ seat.id }}" class="seat-checkbox"
+                                       {% if seat.is_booked or seat.is_held_by_others %}disabled{% endif %}
+                                       {% if seat.is_held_by_me %}checked{% endif %}
+                                       @change="toggleSeatHold({{ seat.id }}, '{{ row }}{{ seat.number }}', {% if seat.is_vip %}true{% else %}false{% endif %}, $event)">
+                                <span id="seat-box-{{ seat.id }}" class="seat-box w-7 h-7 md:w-8 md:h-8 flex items-center justify-center text-[10px] md:text-xs font-bold rounded-lg cursor-pointer text-white
+                                       {% if seat.is_booked %}seat-booked bg-red-600/30 border border-red-500/40 text-red-400 cursor-not-allowed{% elif seat.is_held_by_others %}seat-held bg-amber-500/30 border border-amber-500/50 text-amber-300 cursor-not-allowed{% elif seat.is_vip %}seat-vip{% else %}seat-standard{% endif %}"
                                       :class="{'seat-selected': selectedSeats.some(s => s.id === {{ seat.id }})}">
                                     {{ seat.number }}
                                 </span>
@@ -174,8 +264,12 @@
                     <span>Ghế Đang Chọn</span>
                 </div>
                 <div class="flex items-center gap-2">
+                    <span class="w-5 h-5 rounded-md bg-amber-500/30 border border-amber-500/50 inline-block text-amber-300"></span>
+                    <span>Đang Có Người Chọn (Giữ 10p)</span>
+                </div>
+                <div class="flex items-center gap-2">
                     <span class="w-5 h-5 rounded-md bg-red-600/30 border border-red-500/40 inline-block opacity-40"></span>
-                    <span>Ghế Đã Có Khách</span>
+                    <span>Ghế Đã Bán</span>
                 </div>
             </div>
         </div>
@@ -204,6 +298,15 @@
                         <p class="text-base font-semibold text-white">{{ showtime.start_time|date:"d/m/Y" }}</p>
                     </div>
                 </div>
+
+                <!-- Hold Timer Banner -->
+                <div x-show="selectedSeats.length > 0" x-transition class="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5 text-amber-400 text-xs font-bold">
+                        <i class="fa-solid fa-clock animate-pulse"></i>
+                        <span>Thời gian giữ ghế:</span>
+                    </div>
+                    <span class="font-mono font-black text-amber-400 text-base" x-text="formatTimer()">10:00</span>
+                </div>
                 
                 <div class="pt-4 border-t border-border/40 space-y-2">
                     <div class="flex justify-between items-center text-sm">
@@ -218,15 +321,11 @@
             </div>
 
             <!-- Submit Button (triggers form submit) -->
-            <button type="submit" form="seats-form" 
-                    :disabled="selectedSeats.length === 0"
-                    class="w-full bg-primary disabled:bg-secondary disabled:text-subtext disabled:shadow-none text-background font-bold py-4 rounded-2xl hover:bg-primaryHover transition-all duration-300 shadow-glow flex items-center justify-center gap-3 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background">
-                <i class="fa-solid fa-credit-card"></i>
-                Tiến Hành Thanh Toán
+            <button type="submit" form="seats-form" :disabled="selectedSeats.length === 0"
+                    class="w-full bg-primary text-background font-bold py-4 rounded-2xl hover:bg-primaryHover transition-all duration-300 shadow-glow disabled:opacity-40 disabled:cursor-not-allowed text-base flex items-center justify-center gap-2">
+                <span>Tiếp Tục Thanh Toán</span>
+                <i class="fa-solid fa-arrow-right"></i>
             </button>
-            <p class="text-[10px] text-subtext text-center mt-2 leading-relaxed">
-                Lưu ý: Ghế đã chọn sẽ được giữ tạm thời trong vòng 10 phút để bạn hoàn tất thủ tục thanh toán.
-            </p>
         </div>
     </div>
 </div>
