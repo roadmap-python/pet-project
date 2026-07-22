@@ -750,3 +750,15 @@ def admin_showtime_delete(request, showtime_id):
     showtime.delete()
     messages.success(request, "Đã xóa suất chiếu thành công!")
     return redirect('admin-showtimes')
+
+
+def openapi_yaml(request):
+    import os
+    from django.conf import settings
+    from django.http import FileResponse
+    file_path = os.path.join(settings.BASE_DIR, 'docs', 'openapi.yaml')
+    return FileResponse(open(file_path, 'rb'), content_type='text/yaml')
+
+
+def swagger_ui(request):
+    return render(request, 'swagger_ui.html')

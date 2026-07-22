@@ -1,0 +1,802 @@
+openapi: 3.0.3
+info:
+  title: LuxeCinema Movie Ticket API
+  description: Hệ thống API RESTful dành cho dịch vụ đặt vé phim trực tuyến LuxeCinema. Hỗ trợ đầy đủ các chức năng xác thực người dùng JWT, lấy danh sách phim, quản lý rạp chiếu, suất chiếu, sơ đồ ghế ngồi và quy trình đặt vé, thanh toán trực tuyến.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+paths:
+  /api/auth/register/:
+    post:
+      tags:
+        - Authentication
+      summary: Đăng ký tài khoản người dùng mới
+      description: Tạo tài khoản người dùng với các thông tin cá nhân cơ bản và cấp luôn cặp Token JWT (Access & Refresh).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - full_name
+                - phone_number
+                - email
+                - password
+                - confirm_password
+              properties:
+                full_name:
+                  type: string
+                  example: Nguyen Van A
+                phone_number:
+                  type: string
+                  example: "0912345678"
+                email:
+                  type: string
+                  format: email
+                  example: user_a@example.com
+                password:
+                  type: string
+                  format: password
+                  example: Password123
+                confirm_password:
+                  type: string
+                  format: password
+                  example: Password123
+      responses:
+        "201":
+          description: Đăng ký tài khoản thành công.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Đăng ký tài khoản thành công!
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      username:
+                        type: string
+                        example: user_a@example.com
+                      email:
+                        type: string
+                        example: user_a@example.com
+                  tokens:
+                    type: object
+                    properties:
+                      refresh:
+                        type: string
+                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      access:
+                        type: string
+                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        "400":
+          description: Dữ liệu gửi lên không hợp lệ hoặc Email đã tồn tại.
+
+  /api/auth/login/:
+    post:
+      tags:
+        - Authentication
+      summary: Đăng nhập người dùng (Cấp JWT Token)
+      description: Nhận Email (username) và Mật khẩu để xác thực người dùng, trả về JWT Access Token và Refresh Token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  format: email
+                  example: user_a@example.com
+                password:
+                  type: string
+                  format: password
+                  example: Password123
+      responses:
+        "200":
+          description: Đăng nhập thành công.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  refresh:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  access:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        "401":
+          description: Thông tin đăng nhập không chính xác.
+
+  /api/auth/refresh/:
+    post:
+      tags:
+        - Authentication
+      summary: Làm mới Access Token
+      description: Nhận Refresh Token để cấp lại một Access Token mới mà không bắt người dùng phải đăng nhập lại.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh
+              properties:
+                refresh:
+                  type: string
+                  example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      responses:
+        "200":
+          description: Làm mới Token thành công.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+  /api/movies/:
+    get:
+      tags:
+        - Movies
+      summary: Lấy danh sách toàn bộ phim
+      description: Trả về danh sách tất cả các phim đang chiếu và sắp chiếu trong hệ thống, sắp xếp giảm dần theo ID.
+      responses:
+        "200":
+          description: Thành công.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  movies:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Movie'
+    post:
+      tags:
+        - Movies
+      summary: Thêm phim mới (Yêu cầu Admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MovieCreateUpdate'
+      responses:
+        "201":
+          description: Tạo phim mới thành công.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Movie'
+        "400":
+          description: Thiếu dữ liệu bắt buộc hoặc sai định dạng.
+        "403":
+          description: Không có quyền truy cập (Chỉ dành cho Admin).
+
+  /api/movies/{movie_id}/:
+    parameters:
+      - name: movie_id
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: ID của bộ phim
+    get:
+      tags:
+        - Movies
+      summary: Lấy chi tiết một bộ phim
+      responses:
+        "200":
+          description: Thành công.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Movie'
+        "404":
+          description: Không tìm thấy phim.
+    put:
+      tags:
+        - Movies
+      summary: Cập nhật bộ phim (Yêu cầu Admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MovieCreateUpdate'
+      responses:
+        "200":
+          description: Cập nhật thành công.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Movie'
+        "403":
+          description: Không có quyền truy cập.
+        "404":
+          description: Không tìm thấy phim.
+    delete:
+      tags:
+        - Movies
+      summary: Xóa bộ phim (Yêu cầu Admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Xóa thành công.
+        "403":
+          description: Không có quyền truy cập.
+        "404":
+          description: Không tìm thấy phim.
+
+  /api/cinemas/:
+    get:
+      tags:
+        - Cinemas
+      summary: Lấy danh sách toàn bộ rạp chiếu
+      responses:
+        "200":
+          description: Thành công.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cinemas:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Cinema'
+    post:
+      tags:
+        - Cinemas
+      summary: Thêm rạp chiếu mới (Yêu cầu Admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - location
+              properties:
+                name:
+                  type: string
+                  example: LuxeCinema Landmark 81
+                location:
+                  type: string
+                  example: Vincom Center Landmark 81, Bình Thạnh
+      responses:
+        "201":
+          description: Tạo rạp mới thành công.
+        "403":
+          description: Không có quyền truy cập.
+
+  /api/cinemas/{cinema_id}/:
+    parameters:
+      - name: cinema_id
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: ID của rạp chiếu
+    get:
+      tags:
+        - Cinemas
+      summary: Lấy thông tin chi tiết rạp chiếu kèm danh sách phòng
+      responses:
+        "200":
+          description: Thành công.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  name:
+                    type: string
+                    example: LuxeCinema Landmark 81
+                  location:
+                    type: string
+                    example: Vincom Center Landmark 81, Bình Thạnh
+                  rooms:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 5
+                        name:
+                          type: string
+                          example: IMAX Room 1
+        "404":
+          description: Không tìm thấy rạp chiếu.
+    put:
+      tags:
+        - Cinemas
+      summary: Cập nhật rạp chiếu (Yêu cầu Admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: LuxeCinema Landmark 81 (Updated)
+                location:
+                  type: string
+                  example: Khu Vinhomes Central Park, Bình Thạnh
+      responses:
+        "200":
+          description: Cập nhật thành công.
+        "403":
+          description: Không có quyền truy cập.
+    delete:
+      tags:
+        - Cinemas
+      summary: Xóa rạp chiếu (Yêu cầu Admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Xóa thành công.
+        "403":
+          description: Không có quyền truy cập.
+
+  /api/showtimes/:
+    get:
+      tags:
+        - Showtimes
+      summary: Lấy toàn bộ lịch chiếu
+      responses:
+        "200":
+          description: Thành công.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  showtimes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Showtime'
+    post:
+      tags:
+        - Showtimes
+      summary: Thêm lịch chiếu mới (Yêu cầu Admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - movie_id
+                - room_id
+                - start_time
+                - end_time
+                - base_price
+              properties:
+                movie_id:
+                  type: integer
+                  example: 1
+                room_id:
+                  type: integer
+                  example: 2
+                start_time:
+                  type: string
+                  format: date-time
+                  example: "2026-07-25T18:00:00Z"
+                end_time:
+                  type: string
+                  format: date-time
+                  example: "2026-07-25T20:30:00Z"
+                base_price:
+                  type: number
+                  example: 80000.00
+      responses:
+        "201":
+          description: Tạo lịch chiếu thành công.
+
+  /api/showtimes/{showtime_id}/:
+    parameters:
+      - name: showtime_id
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: ID của suất chiếu
+    get:
+      tags:
+        - Showtimes
+      summary: Lấy chi tiết suất chiếu
+      responses:
+        "200":
+          description: Thành công.
+    put:
+      tags:
+        - Showtimes
+      summary: Cập nhật suất chiếu (Yêu cầu Admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Cập nhật thành công.
+    delete:
+      tags:
+        - Showtimes
+      summary: Xóa suất chiếu (Yêu cầu Admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Xóa thành công.
+
+  /api/showtimes/{showtime_id}/seats/:
+    parameters:
+      - name: showtime_id
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: ID của suất chiếu
+    get:
+      tags:
+        - Showtimes
+      summary: Lấy sơ đồ ghế ngồi và trạng thái đặt chỗ (Real-Time Seat Map)
+      description: Trả về toàn bộ ghế trong phòng chiếu của suất chiếu được chỉ định kèm trạng thái `is_booked` (đã có người đặt mua hoặc đang được người khác giữ chỗ).
+      responses:
+        "200":
+          description: Thành công.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  showtime_id:
+                    type: integer
+                    example: 10
+                  room:
+                    type: string
+                    example: Cinema Room A
+                  cinema:
+                    type: string
+                    example: LuxeCinema Landmark 81
+                  seats:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SeatStatus'
+
+  /api/bookings/:
+    get:
+      tags:
+        - Bookings
+      summary: Lấy danh sách lịch sử đặt vé của tôi
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Thành công.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bookings:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Booking'
+    post:
+      tags:
+        - Bookings
+      summary: Khởi tạo một đơn đặt vé mới (PENDING)
+      description: Chọn suất chiếu và danh sách ghế để giữ chỗ tạm thời (khóa ghế) trong 10 phút và tạo hóa đơn chờ thanh toán.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - showtime_id
+                - selected_seat_ids
+              properties:
+                showtime_id:
+                  type: integer
+                  example: 10
+                selected_seat_ids:
+                  type: array
+                  items:
+                    type: integer
+                  example: [12, 13]
+      responses:
+        "201":
+          description: Khởi tạo booking thành công.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        "400":
+          description: Một hoặc nhiều ghế đã được đặt trước đó.
+
+  /api/bookings/{booking_id}/:
+    parameters:
+      - name: booking_id
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: ID của đơn đặt vé
+    get:
+      tags:
+        - Bookings
+      summary: Xem chi tiết đơn đặt vé của tôi
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Thành công.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+
+  /api/bookings/{booking_id}/pay/:
+    parameters:
+      - name: booking_id
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: ID của đơn đặt vé
+    post:
+      tags:
+        - Bookings
+      summary: Xác nhận thanh toán hóa đơn (Chuyển sang CONFIRMED)
+      description: Xác thực thanh toán giả lập, cập nhật trạng thái đơn đặt vé thành công và giải phóng khóa giữ ghế tạm thời.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Thanh toán thành công.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Thanh toán thành công!
+                  booking:
+                    $ref: '#/components/schemas/Booking'
+        "400":
+          description: Đơn đặt vé không ở trạng thái PENDING hoặc quá hạn 10 phút.
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Nhập JWT Access Token để xác thực các API yêu cầu đăng nhập.
+
+  schemas:
+    Movie:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: "Avatar: The Way of Water"
+        duration:
+          type: integer
+          description: Thời lượng phim (phút)
+          example: 192
+        description:
+          type: string
+          example: Câu chuyện tiếp theo về hành tinh Pandora...
+        rating:
+          type: number
+          format: float
+          example: 7.8
+        actors:
+          type: string
+          example: Sam Worthington, Zoe Saldana
+        genres:
+          type: array
+          items:
+            type: string
+          example: ["Action", "Sci-Fi"]
+        poster_url:
+          type: string
+          nullable: true
+          example: "/media/posters/avatar2.jpg"
+        banner_url:
+          type: string
+          nullable: true
+          example: "/media/banners/avatar2_banner.jpg"
+
+    MovieCreateUpdate:
+      type: object
+      required:
+        - title
+        - duration
+      properties:
+        title:
+          type: string
+          example: "Avatar: The Way of Water"
+        duration:
+          type: integer
+          example: 192
+        description:
+          type: string
+          example: Câu chuyện tiếp theo về hành tinh Pandora...
+        rating:
+          type: number
+          example: 7.8
+        actors:
+          type: string
+          example: Sam Worthington, Zoe Saldana
+        genres:
+          type: array
+          items:
+            type: integer
+          example: [1, 2]
+
+    Cinema:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: LuxeCinema Landmark 81
+        location:
+          type: string
+          example: Vincom Center Landmark 81, Bình Thạnh
+        image:
+          type: string
+          nullable: true
+          example: "/media/cinemas/landmark.jpg"
+
+    Showtime:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 10
+        movie:
+          type: string
+          example: "Avatar: The Way of Water"
+        movie_id:
+          type: integer
+          example: 1
+        room:
+          type: string
+          example: IMAX Room 1
+        cinema:
+          type: string
+          example: LuxeCinema Landmark 81
+        start_time:
+          type: string
+          format: date-time
+          example: "2026-07-25T18:00:00Z"
+        end_time:
+          type: string
+          format: date-time
+          example: "2026-07-25T20:30:00Z"
+        base_price:
+          type: number
+          example: 80000.00
+
+    SeatStatus:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12
+        row:
+          type: string
+          example: E
+        number:
+          type: integer
+          example: 5
+        type:
+          type: string
+          enum: [STANDARD, VIP]
+          example: VIP
+        price:
+          type: number
+          example: 96000.00
+        is_booked:
+          type: boolean
+          description: Đánh dấu ghế đã bán hoặc đang được người khác giữ trong 10 phút.
+          example: false
+
+    Booking:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 25
+        username:
+          type: string
+          example: user_a@example.com
+        showtime:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 10
+            movie:
+              type: string
+              example: "Avatar: The Way of Water"
+            room:
+              type: string
+              example: IMAX Room 1
+            cinema:
+              type: string
+              example: LuxeCinema Landmark 81
+            start_time:
+              type: string
+              format: date-time
+              example: "2026-07-25T18:00:00Z"
+        status:
+          type: string
+          enum: [PENDING, CONFIRMED, CANCELLED]
+          example: PENDING
+        tickets:
+          type: array
+          items:
+            type: object
+            properties:
+              seat:
+                type: string
+                example: E5
+              price:
+                type: number
+                example: 96000.00
+        total_amount:
+          type: number
+          example: 192000.00
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-07-21T15:30:00Z"

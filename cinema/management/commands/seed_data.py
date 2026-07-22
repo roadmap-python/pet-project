@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django.db import transaction
-from cinema.models import Genre, Movie, Cinema, Room, Seat, Showtime
+from cinema.models import Genre, Movie, Cinema, Room, Seat, Showtime, Booking, Ticket, Payment, SeatHold
 from pathlib import Path
 import json
 
@@ -148,7 +148,11 @@ class Command(BaseCommand):
     @transaction.atomic
     def handle(self, *args, **kwargs):
 
-        self.stdout.write("1. Dọn dẹp dữ liệu cũ...")
+        self.stdout.write("1. Cleared old data...")
+        SeatHold.objects.all().delete()
+        Payment.objects.all().delete()
+        Ticket.objects.all().delete()
+        Booking.objects.all().delete()
         Showtime.objects.all().delete()
         Seat.objects.all().delete()
         Room.objects.all().delete()
@@ -156,11 +160,11 @@ class Command(BaseCommand):
         Movie.objects.all().delete()
         Genre.objects.all().delete()
 
-        self.stdout.write("2. Khởi tạo Thể loại (Genres)...")
+        self.stdout.write("2. Created Genres...")
         genre_names = ['Hành Động', 'Viễn Tưởng', 'Hoạt Hình', 'Phiêu Lưu', 'Tâm Lý']
         genres = [Genre.objects.create(name=name) for name in genre_names]
 
-        self.stdout.write("3. Đang nạp Phim (Lưu trực tiếp URL vào DB)...")
+        self.stdout.write("3. Created Movies...")
         movies = []
         for data in MOVIE_DATA:
             movie = Movie.objects.create(
@@ -173,7 +177,7 @@ class Command(BaseCommand):
             movie.genres.set(random.sample(genres, random.randint(1, 3)))
             movies.append(movie)
 
-        self.stdout.write("4. Sinh hệ thống Rạp và Phòng chiếu...")
+        self.stdout.write("4. Created Cinemas and Rooms...")
         cinema_data = [
             ("CGV Vincom Đồng Khởi", "Q1, TP.HCM"), 
             ("Lotte Cinema Nam Sài Gòn", "Q7, TP.HCM"),
@@ -186,7 +190,7 @@ class Command(BaseCommand):
             for i in range(1, 5):
                 rooms.append(Room.objects.create(cinema=cinema, name=f"Cinema {i}"))
 
-        self.stdout.write("5. Sinh hệ thống Ma trận Ghế ngồi hàng loạt...")
+        self.stdout.write("5. Created Seat Matrix...")
         seats = []
         for room in rooms:
             for row in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']: 
@@ -194,14 +198,14 @@ class Command(BaseCommand):
                     seats.append(Seat(room=room, row=row, number=num))
         Seat.objects.bulk_create(seats, batch_size=500)
         
-        self.stdout.write("6. Lên Lịch chiếu (Showtimes) cho 3 ngày tới...")
+        self.stdout.write("6. Created Showtimes...")
         now = timezone.now()
         showtimes = []
         for room in rooms:
-            for day_offset in range(3):
+            for day_offset in range(7):
                 current_time = now.replace(hour=9, minute=0, second=0, microsecond=0) + timedelta(days=day_offset)
                 end_of_day = current_time.replace(hour=23, minute=0)
-
+ 
                 while current_time < end_of_day:
                     movie = random.choice(movies)
                     start_time = current_time
@@ -215,6 +219,6 @@ class Command(BaseCommand):
                         base_price=random.choice([100000, 120000, 150000])
                     ))
                     current_time = end_time + timedelta(minutes=30)
-
+ 
         Showtime.objects.bulk_create(showtimes, batch_size=500)
-        self.stdout.write(self.style.SUCCESS("🎉 HOÀN TẤT! Dữ liệu đã được nạp siêu tốc."))
+        self.stdout.write(self.style.SUCCESS("Success: Seeding completed successfully."))
