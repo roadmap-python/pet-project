@@ -11,7 +11,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import Genre, Movie, Cinema, Room, Seat, Showtime, Booking, Ticket, Payment
+from .models import Genre, Movie, Cinema, Room, Seat, Showtime, Booking, Ticket, Payment, SeatHold
 
 # Helper function to serialize a movie
 def serialize_movie(movie):
@@ -446,6 +446,16 @@ class BookingPayAPIView(APIView):
 
     def post(self, request, booking_id):
         booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+        
+        # Check 10 minutes timeout (600s)
+        booking_age_seconds = (timezone.now() - booking.created_at).total_seconds()
+        if booking.status == 'PENDING' and booking_age_seconds > 600:
+            with transaction.atomic():
+                booking.status = 'CANCELLED'
+                booking.save()
+                SeatHold.objects.filter(showtime=booking.showtime, user=booking.user).delete()
+            return Response({'error': 'Đơn đặt vé đã hết hạn thanh toán (quá 10 phút).'}, status=status.HTTP_400_BAD_REQUEST)
+
         if booking.status != 'PENDING':
             return Response({'error': 'Chỉ có thể thanh toán các đơn hàng đang chờ (PENDING).'}, status=status.HTTP_400_BAD_REQUEST)
             

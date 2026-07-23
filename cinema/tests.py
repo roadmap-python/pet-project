@@ -196,3 +196,44 @@ class BookingAPITests(APITestCase):
         pay_response = self.client.post(pay_url)
         self.assertEqual(pay_response.status_code, status.HTTP_200_OK)
         self.assertEqual(pay_response.data['booking']['status'], 'CONFIRMED')
+
+    def test_create_booking_duplicate_seat_fails(self):
+        self.client.force_authenticate(user=self.user)
+        # Create booking for seat_1 first
+        booking_url = reverse('api-booking-list')
+        payload = {
+            'showtime_id': self.showtime.id,
+            'selected_seat_ids': [self.seat_1.id]
+        }
+        self.client.post(booking_url, payload, format='json')
+
+        # Try to book the same seat by another user
+        other_user = User.objects.create_user(username='other@example.com', email='other@example.com', password='Password123')
+        self.client.force_authenticate(user=other_user)
+        response = self.client.post(booking_url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_pay_expired_booking_fails(self):
+        self.client.force_authenticate(user=self.user)
+        # Create booking
+        booking_url = reverse('api-booking-list')
+        payload = {
+            'showtime_id': self.showtime.id,
+            'selected_seat_ids': [self.seat_1.id]
+        }
+        response = self.client.post(booking_url, payload, format='json')
+        booking_id = response.data['id']
+        
+        # Manually backdate the booking creation date in DB to older than 10 minutes ago
+        booking = Booking.objects.get(id=booking_id)
+        booking.created_at = timezone.now() - timezone.timedelta(minutes=11)
+        booking.save()
+
+        # Try to pay the expired booking
+        pay_url = reverse('api-booking-pay', kwargs={'booking_id': booking_id})
+        pay_response = self.client.post(pay_url)
+        self.assertEqual(pay_response.status_code, status.HTTP_400_BAD_REQUEST)
+        
+        # Verify it has been cancelled automatically
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, 'CANCELLED')
